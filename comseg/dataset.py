@@ -43,7 +43,7 @@ class ComSegDataset():
         path_dataset_folder = None,
         path_to_mask_prior = None,
         mask_file_extension = ".tiff",
-                    ):
+                 dico_scale={"x": 0.103, 'y': 0.103, "z": 0.3}):
         self.path_dataset_folder = Path(path_dataset_folder)
         self.path_to_mask_prior = Path(path_to_mask_prior)
         self.mask_file_extension = mask_file_extension
@@ -56,8 +56,8 @@ class ComSegDataset():
             print(f"add {image_path_df.stem}")
             self.path_image_dict[image_path_df.stem] = image_path_df
         self.list_index = list(self.path_image_dict.keys())
-
         self.selected_genes = selected_genes
+        self.dico_scale = dico_scale
 
     def __getitem__(self, key):
         if isinstance(key, int):
@@ -76,8 +76,13 @@ class ComSegDataset():
 
     #### fct adding prior
 
-    def add_prior_from_mask(self):
-
+    def add_prior_from_mask(self,
+                            prior_keys_name = 'in_nucleus',
+                            overwrite = False):
+        """
+        add the prior column to the csv file and save it
+        :return:
+        """
         for image_path_df in self.path_dataset_folder.glob('*.csv'):
             print(f"add prior to {image_path_df.stem}")
             df_spots = pd.read_csv(image_path_df)
@@ -95,10 +100,13 @@ class ComSegDataset():
             y_list = list(df_spots.y)
             z_list = list(df_spots.z)
             prior_list = []
+
             for ix in range(len(z_list)):
                 nuc_index_prior = mask[z_list[ix], y_list[ix], x_list[ix]]
                 prior_list.append(nuc_index_prior)
-            df_spots['prior'] = prior_list
+            if prior_keys_name in df_spots.columns and overwrite == False:
+                raise Exception(f"prior_keys_name {prior_keys_name} already in df_spots and overwrite is False")
+            df_spots[prior_keys_name] = prior_list
             df_spots.to_csv(image_path_df,  index=False)
 
 
@@ -107,11 +115,12 @@ class ComSegDataset():
 
     def count_matrix_in_situ_from_knn(self,
                                       df_spots_label,
-                                      dico_scale={"x": 0.103, 'y': 0.103, "z": 0.3},  # in micrometer
                                       n_neighbors=5,
                                       radius=5,
                                       mode="nearest_nn_radius",
                                       directed=True):
+
+
         """
         compute the in situ count matrix indexed by selected_genes using the directed graph
         take either as input dico_simulation (internal) or df_spots_label (more general)
@@ -142,11 +151,11 @@ class ComSegDataset():
         if "z" in df_spots_label.columns:
             list_coordo_order_no_scaling = np.array([df_spots_label.x, df_spots_label.y, df_spots_label.z]).T
             list_coordo_order = list_coordo_order_no_scaling * np.array(
-                [dico_scale['x'], dico_scale['y'], dico_scale["z"]])
+                [self.dico_scale['x'], self.dico_scale['y'], self.dico_scale["z"]])
 
         else:
             list_coordo_order_no_scaling = np.array([df_spots_label.x, df_spots_label.y]).T
-            list_coordo_order = list_coordo_order_no_scaling * np.array([dico_scale['x'], dico_scale['y']])
+            list_coordo_order = list_coordo_order_no_scaling * np.array([self.dico_scale['x'], self.dico_scale['y']])
 
         dico_list_features = {}
         assert 'gene' in df_spots_label.columns
@@ -246,11 +255,9 @@ class ComSegDataset():
                 dico_proba_edge[self.selected_genes[gene_target]][self.selected_genes[gene_source]] = corr
         return dico_proba_edge
 
-    def compute_in_situ_edge(
+    def compute_edge_weight(
             self,
             dico_df_spots_label=None,
-
-            dico_scale={"x": 0.103, 'y': 0.103, "z": 0.3},  # in micrometer
             images_subset = None,
             mode="nearest_nn_radius",
             n_neighbors=25,
@@ -285,6 +292,7 @@ class ComSegDataset():
         assert dico_df_spots_label is None
 
         list_of_count_matrix = []
+        assert self.__len__() > 0, "no images in the dataset"
         for image_name in self.path_image_dict.keys():
 
             if images_subset is not None: ## select only intersting images if needed
@@ -296,7 +304,6 @@ class ComSegDataset():
 
             print("image name : ", image_name)
             count_matrix = self.count_matrix_in_situ_from_knn(df_spots_label=df_spots_label,  # df_spots_label,
-                                                         dico_scale=dico_scale,  # in micrometer
                                                          n_neighbors=n_neighbors,
                                                          radius=radius,
                                                          mode=mode,
@@ -318,6 +325,16 @@ class ComSegDataset():
         self.dict_co_expression = dico_proba_edge
 
         return dico_proba_edge, count_matrix
+
+
+
+    def plot_dict_co_expression(self,
+                                selected_genes = None):
+
+        if selected_genes is None:
+            selected_genes = self.selected_genes
+
+
 
     ### fct adding co-expression matrix
 
@@ -350,7 +367,7 @@ if __name__ == "__main__":
                     )
     dataset.add_prior_from_mask()
 
-    dataset.compute_in_situ_edge(dico_scale={"x": 0.103, 'y': 0.103, "z": 0.3},  # in micrometer
+    dataset.compute_in_situ_edge(#dico_scale={"x": 0.103, 'y': 0.103, "z": 0.3},  # in micrometer
             selected_genes=list_marker_ns,
             images_subset = None,
             mode="nearest_nn_radius",

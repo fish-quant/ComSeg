@@ -36,10 +36,13 @@ import igraph as ig
 from sklearn import metrics
 import scipy
 import networkx.algorithms.community as nx_comm
-
 import numpy as np
+from sklearn.utils.extmath import weighted_mode
+from scipy.spatial import ConvexHull, Delaunay
+
 
 __all__ = ["ComSeg"]
+
 
 def normal_dist(x , mean , sd):
     prob_density = (np.pi*sd) * np.exp(-0.5*((x-mean)/sd)**2)
@@ -50,14 +53,15 @@ class ComSeg():
 
     def __init__(self,
                 df_spots_label,
-                 selected_genes,
+                selected_genes,
                 dict_scale={"x": 0.103, 'y': 0.103, "z": 0.3},  # in micrometer
                 mean_cell_diameter=15,  # in micrometer
                 max_cell_length=200,  # in micrometer
-                k_nearest_neighbors = 40,
+                k_nearest_neighbors = 10,
                 edge_max_length = None,
                 eps_min_weight =  0.01,
-                resolution =1):
+                resolution =1
+                 ):
         self.df_spots_label = df_spots_label
         self.dict_scale = dict_scale
         self.k_nearest_neighbors = k_nearest_neighbors
@@ -72,6 +76,9 @@ class ComSeg():
 
         self.agg_sd =  1
         self.agg_max_dist = mean_cell_diameter/2
+        self.dico_xyz_index = {"x": 2, "y":1, "z":0 }
+        self.mean_cell_diameter = mean_cell_diameter
+
     ## create directed graph
 
     def create_graph(self,
@@ -145,9 +152,9 @@ class ComSeg():
                          clustering_method="louvain_with_prior",
                          weights_name="weight",
 
-                         prior_keys="prior",
+                         prior_keys="in_nucleus",
                          seed=None,
-                         super_node_prior_keys="prior",
+                         super_node_prior_keys="in_nucleus",
                          confidence_level=1,
                          # param for multigrpah leiden
                          ):
@@ -302,4 +309,403 @@ class ComSeg():
 
         self.community_anndata = anndata
         return anndata
-    ##
+
+
+
+    ### add centroids to the graph
+    def add_centroids(self, dict_cell_centroid):
+        for cell, centroid in dict_cell_centroid.items():
+            centroid  = np.array(centroid)
+            if centroid.ndim == 2:
+                centroid = np.mean(centroid, axis=0)
+            assert centroid.ndim == 1
+            self.G.add_node(len(self.G) -1 + int(cell),
+                            gene = "centroid",
+                            cell = cell,
+                            in_nucleus = cell,
+                            z = centroid[self.dico_xyz_index["z"]],
+                            y = centroid[self.dico_xyz_index["y"]],
+                            x = centroid[self.dico_xyz_index["x"]])
+            self.dict_cell_centroid = dict_cell_centroid
+        return self.G
+
+
+
+
+    ### add classify it
+    def classify_centroid(self,
+                          dict_cell_centroid,
+                          n_neighbors = 15,
+                            dict_in_pixel = True,
+                          max_dist_centroid = None,
+                          key_pred = "leiden_merged",
+                          distance = "gaussian",
+                          convex_hull_centroid = True,
+                          ):
+
+        self.dict_cell_centroid = dict_cell_centroid
+
+        if max_dist_centroid is None:
+            max_dist_centroid = self.mean_cell_diameter / 3
+        nbrs = NearestNeighbors(n_neighbors=n_neighbors,
+                                algorithm='ball_tree').fit(self.list_coordo_order)
+
+        if dict_in_pixel:
+            list_coordo_order_nuc_centroid_no_scaling = []
+            list_coordo_order_nuc_centroid = []
+            for nuc in self.dict_cell_centroid:
+                centroid_pix = np.array(self.dict_cell_centroid[nuc][0])
+                centroid_um = centroid_pix * np.array([self.dict_scale['x'],
+                                                                         self.dict_scale['y'],
+                                                                         self.dict_scale["z"]]) ## it is a bit wierd to altern [x,y,z] for spots list
+                                                                                        # with  [z,y,x] for images
+                list_coordo_order_nuc_centroid_no_scaling.append(centroid_pix)
+                list_coordo_order_nuc_centroid.append(centroid_um)
+        else:
+            raise ValueError("not implemented yet with dico_in_pixel = False")
+
+
+        ad_nuc_centroid = nbrs.kneighbors_graph(list_coordo_order_nuc_centroid)  ## can be optimize here
+        distance_nuc_centroid = nbrs.kneighbors_graph(list_coordo_order_nuc_centroid, mode='distance')
+
+        node_nb = len(self.list_coordo_order)
+        nb_node_add = 0
+        dico_nuclei_centroid =  {}
+        for nuc_index in range(len(self.dict_cell_centroid)):
+
+            nuc = list(self.dict_cell_centroid.keys())[nuc_index]
+            centroid = self.dict_cell_centroid[nuc]
+            centroid  = np.array(centroid)
+            if centroid.ndim == 2:
+                centroid = np.mean(centroid, axis=0)
+
+            dico_nuclei_centroid[nuc] = {}
+            dico_nuclei_centroid[nuc]['z'] = centroid[self.dico_xyz_index["z"]]
+            dico_nuclei_centroid[nuc]['y'] = centroid[self.dico_xyz_index["y"]]
+            dico_nuclei_centroid[nuc]['x'] = centroid[self.dico_xyz_index["x"]]
+            dico_nuclei_centroid[nuc]["type_list"] = []
+            dico_nuclei_centroid[nuc]["gr_type_list"] = []
+            dico_nuclei_centroid[nuc]["ngb_distance"] = []
+            dico_nuclei_centroid[nuc]["ngb_gr_cell"] = []
+            dico_nuclei_centroid[nuc]["ngb_distance_weights"] = []
+            dico_nuclei_centroid[nuc]["gaussian"] = []
+            dico_nuclei_centroid[nuc]["gene"] = "centroid"
+            dico_nuclei_centroid[nuc]["cell"] = nuc
+            dico_nuclei_centroid[nuc]["in_nucleus"] = nuc
+            dico_nuclei_centroid[nuc]["index_commu_in_nucleus"] = nuc
+            type_list = []
+            array_index_nn = np.nonzero(ad_nuc_centroid[nuc_index].toarray())[1]
+            index_type_list = []
+            for index_nn_centroid in array_index_nn:
+                if max_dist_centroid is not None:
+                    if distance_nuc_centroid[nuc_index, index_nn_centroid] > max_dist_centroid:
+                        continue
+                index_type_list.append(index_nn_centroid)
+                type_list.append(self.G.nodes[index_nn_centroid])
+                dico_nuclei_centroid[nuc]["type_list"].append(self.G.nodes[index_nn_centroid][key_pred])
+                dico_nuclei_centroid[nuc]["ngb_distance"].append(
+                    distance_nuc_centroid[nuc_index, index_nn_centroid])
+                dico_nuclei_centroid[nuc]["ngb_distance_weights"].append(
+                    max_dist_centroid - distance_nuc_centroid[nuc_index, index_nn_centroid])
+                dico_nuclei_centroid[nuc]['nn_graph_indice'] = array_index_nn
+                dico_nuclei_centroid[nuc]["gaussian"].append(
+                    normal_dist(distance_nuc_centroid[nuc_index, index_nn_centroid], mean=0, sd=1))
+
+            type_list = np.array(dico_nuclei_centroid[nuc]["type_list"])
+            weights_list = np.array(dico_nuclei_centroid[nuc][distance])[type_list != None]
+            type_list = type_list[type_list != None]
+            pred_cluster = weighted_mode(a=type_list,
+                                         w=weights_list)[0][0] if len(
+                type_list) > 0 else "unknown"
+
+            if convex_hull_centroid:
+                list_coordo_order = self.list_coordo_order.copy()
+                index_type_list = np.array(index_type_list)
+                index_type_list = index_type_list[type_list == pred_cluster]
+                if len(index_type_list) <= 3:
+                    pred_cluster = "unknown"
+                else:
+                    ### detect 2D input
+                    invalid_dim = np.array([np.all(
+                        list_coordo_order[index_type_list][:, i] == list_coordo_order[index_type_list][0, i]) for i
+                                            in
+                                            range(list_coordo_order.shape[1])
+                                            ]).astype(int)
+                    if np.sum(invalid_dim) == 1:
+                        assert invalid_dim[2] == 1
+                        try:
+                            convex_hull = Delaunay(list_coordo_order[index_type_list][:, :2])
+                            is_valid_cv = convex_hull.find_simplex([dico_nuclei_centroid[nuc]['centroid_um'][:2]])[
+                                              0] >= 0
+                        except Exception as e:
+                            print(e)
+                            is_valid_cv = False
+
+                    else:
+                        # convex_hull = Delaunay(list_coordo_order[index_type_list])
+                        try:
+                            convex_hull = Delaunay(list_coordo_order[index_type_list][:, :2])
+                            is_valid_cv = convex_hull.find_simplex(
+                                [dico_nuclei_centroid[nuc]['centroid_um'][:2]])[0] >= 0
+                        except Exception as e:
+                            print(e)
+                            is_valid_cv = False
+                    if not is_valid_cv:
+                        pred_cluster = "unknown"
+
+            dico_nuclei_centroid[nuc][key_pred] = pred_cluster
+
+        ### add new attribute to node centroid
+
+            node_index = len(self.list_coordo_order) - 1 + nuc
+            self.G.add_nodes_from([(node_index, dico_nuclei_centroid[nuc])])
+            #self.G.nodes[node_index]["type_list"] = dico_nuclei_centroid[nuc]["type_list"]
+            #self.G.nodes[node_index]["gr_type_list"] = dico_nuclei_centroid[nuc]["gr_type_list"]
+            #self.G.nodes[node_index]["ngb_distance"] = dico_nuclei_centroid[nuc]["ngb_distance"]
+            #self.G.nodes[node_index]["ngb_gr_cell"] = dico_nuclei_centroid[nuc]["ngb_gr_cell"]
+            #self.G.nodes[node_index]["ngb_distance_weights"] = dico_nuclei_centroid[nuc]["ngb_distance_weights"]
+            #self.G.nodes[node_index]["gaussian"] = dico_nuclei_centroid[nuc]["gaussian"]
+            #self.G.nodes[node_index]["gene"] = dico_nuclei_centroid[nuc]["gene"]
+            #self.G.nodes[node_index]["cell"] = dico_nuclei_centroid[nuc]["cell"]
+            #self.G.nodes[node_index]["in_nucleus"] = dico_nuclei_centroid[nuc]["in_nucleus"]
+            #self.G.nodes[node_index][key_pred] = pred_cluster
+            for ii in array_index_nn:
+                self.G.add_edge(node_index, ii)
+                if nuc == self.G.nodes[ii]['in_nucleus']:
+                    self.G.add_edge(node_index, ii, distance = 0)
+                else:
+                    self.G.add_edge(node_index, ii, distance = distance_nuc_centroid[nuc_index, ii])
+
+        return self.G
+
+
+    ###### RNA landmark  association ######
+
+
+    def associate_rna2landmark(self,
+                         key_pred = "leiden_merged",
+                         super_node_prior_key='in_nucleus',
+                         distance='distance',
+                         max_distance=""):
+
+        """
+        :param rna_landmark:
+        :param key_pred:
+        :param max_dist_centroid:
+        :param distance:
+        :param convex_hull_centroid:
+        :return:
+        """
+        ## merge supernodes belonging to the nuclei landmark
+        from .utils.utils_graph import _gen_graph
+
+        G_merge = _gen_graph(graph=self.G.copy(),
+                             super_node_prior_key=super_node_prior_key,
+                             distance=distance,
+                             key_pred=key_pred,
+                             )
+
+        G_merge, dico_expression_m_merge = self._associate_rna2landmark(
+            G=G_merge,
+            distance=distance,
+            max_distance=max_distance,
+        )
+        for super_node_index in G_merge.nodes():
+            set_super_nodes = G_merge.nodes[super_node_index]['nodes']
+            for simple_nodes in set_super_nodes:
+                self.G.nodes[simple_nodes]["cell_index_pred"] = G_merge.nodes[super_node_index]["cell_index_pred"]
+        return self.G
+
+    def _associate_rna2landmark(self,
+            G,
+            distance='distance',
+            max_distance=100,  ## in theunit of the graph distance ie um
+    ):
+
+        """
+
+        v3 same than v1 but use the prior key instead of the centroid
+        Parameters
+        ----------
+        G :
+        df_spots_label :
+        scrna_unique_clusters : scrna_unique_clusters from in situ clustering
+        Returns
+        -------
+
+
+        """
+
+        print(f'max distance is {max_distance}')
+
+        nn_find = 0
+        find = 0
+        dico_expression_m = {}  ## store {nuc: nodes}
+        nb_centroid = 0
+        scrna_unique_clusters = []
+        for node_index in G.nodes():
+            if G.nodes[node_index]["key_pred"] is None:
+                raise ValueError("no pred, should be at least -1")
+            scrna_unique_clusters.append(G.nodes[node_index]["key_pred"])
+        scrna_unique_clusters = np.unique(scrna_unique_clusters)
+        for celltype in tqdm(scrna_unique_clusters, desc=f'celltype'):
+            ## get the node of celltype
+            list_nodes_index = [node_index for node_index in G.nodes() if
+                                G.nodes[node_index][
+                                    "key_pred"] == celltype]  # or celltype in G.nodes[node_index][key_pred]] à quoi sert cette ligne
+            subgraph = G.subgraph(list_nodes_index).copy().to_undirected()
+            # print(top)
+            centroid_list = [n for n, y in subgraph.nodes(data=True) if y["super_node_prior_key"] != 0]
+            nb_centroid += len(centroid_list)
+            for cc in tqdm(list(nx.connected_components(subgraph))):
+                # print(f'nb node in cc {len(cc)}')
+                if len(set(centroid_list).intersection(cc)) == 1:
+                    nucleus_node = list(set(centroid_list).intersection(cc))[0]
+                    dico_expression_m[nucleus_node] = list(cc)
+                    find += len(list(cc))
+                if len(set(centroid_list).intersection(cc)) > 1:
+                    # break
+                    list_nuclei = list(set(centroid_list).intersection(cc))
+                    dico_length = {}  # {centroid : length list}
+                    dico_shortest_path = {}
+                    # print(f'list_nuclei len  {len(list_nuclei)}')
+                    tqdm_list_nuclei = tqdm(list_nuclei,
+                                            desc=f' celltype {celltype}list_nuclei len  {len(list_nuclei)}')
+                    for nucleus_node in tqdm_list_nuclei:
+                        dico_expression_m[nucleus_node] = []
+                        length, path = nx.single_source_dijkstra(G.subgraph(cc).to_undirected(),
+                                                                 nucleus_node,
+                                                                 weight=distance,
+                                                                 cutoff=max_distance)
+                        dico_length[nucleus_node] = length
+                        dico_shortest_path[nucleus_node] = path
+                    dico_nodes_centroid_distance = {}
+                    for node in cc:
+                        dico_nodes_centroid_distance[node] = {}
+                    for nucleus_node in list_nuclei:
+                        for node in dico_length[nucleus_node]:
+                            if node in dico_length[nucleus_node]:
+                                dico_nodes_centroid_distance[node][nucleus_node] = dico_length[nucleus_node][node]
+                    for node in cc:
+                        try:
+                            if len(dico_nodes_centroid_distance[node]) > 0:
+                                nearest_c = min(dico_nodes_centroid_distance[node],
+                                                key=dico_nodes_centroid_distance[node].get)
+                                dico_expression_m[nearest_c].append(node)
+                                find += 1
+                            # farest = list(set(list_nuclei) - set([nearest_c]))[0]
+                            # if node not in [nearest_c,farest ]:
+                            #    assert nx.shortest_path_length(G.subgraph(cc).to_undirected(), source=farest, target=node,weight =  "distance")
+                            #    >= nx.shortest_path_length(G.subgraph(cc).to_undirected(), source=nearest_c, target=node,weight =  "distance")
+                        except ValueError:
+                            nn_find += 1
+                            print(
+                                f"node {node} not find in dikjtra why ? should be solve with undirected graph")
+                            print(stop)
+        ## add new_label to the grpa
+        for node_all in G.nodes():
+            G.nodes[node_all]["cell_index_pred"] = 0
+        for centroid in dico_expression_m:
+            nuc_index = G.nodes[centroid]["super_node_prior_key"]
+            for node in dico_expression_m[centroid]:
+                G.nodes[node]["cell_index_pred"] = nuc_index
+        return G, dico_expression_m
+
+
+
+    ##### generate an anndata from the graph
+
+    #### return an anndata with expresion vector
+    ## as obs image name | centroid coordinate |
+    # list of rna spots coordinate |
+    # list of the corresponding rna species
+    #
+
+    def get_anndata_from_result(
+                self,
+               key_cell_pred =  'cell_index_pred',
+               ):
+
+        dico_cell_genes = {}
+        dico_cell_genes_coordinate = {}
+        dico_cell_genes_name = {}
+
+        list_cell_centroid = []
+        for cell in self.dict_cell_centroid:
+            dico_cell_genes[cell] = []
+            dico_cell_genes_coordinate[cell] = []
+            dico_cell_genes_name[cell] = []
+            centroid = self.dict_cell_centroid[cell]
+            centroid  = np.array(centroid)
+            if centroid.ndim == 2:
+                centroid = np.mean(centroid, axis=0)
+            list_cell_centroid += [tuple(centroid)]
+        for node_index, node_data in self.G.nodes(data = True):
+            if node_data['gene'] != 'centroid' and node_data[key_cell_pred] != 0:
+                dico_cell_genes[node_data[key_cell_pred]].append(node_data['gene'])
+                dico_cell_genes_coordinate[node_data[key_cell_pred]].append([node_data["z"],
+                                                         node_data['y'],
+                                                         node_data['x']])
+
+        list_expression_vectors = []
+        list_cell_id = []
+        list_cell_genes_coordinate = []
+        list_genes_name = []
+        for cell in dico_cell_genes:
+            expression_vector = np.bincount(
+                [self.gene_index_dict[gene] for gene in dico_cell_genes[cell]]
+                        , minlength=len(self.gene_index_dict))
+            list_expression_vectors.append(expression_vector)
+            list_cell_id.append(cell)
+            list_cell_genes_coordinate.append(
+                np.array(dico_cell_genes_coordinate[cell])
+            )
+            list_genes_name.append(dico_cell_genes[cell])
+        anndata = ad.AnnData(np.array(list_expression_vectors))
+        anndata.var["features"] = self.selected_genes
+        anndata.var_names = self.selected_genes
+        anndata.obs["cell_id"] = list_cell_id
+        anndata.obs["centroid"] = list_cell_centroid
+        anndata.obs["spots_coordinates"] = np.array(list_cell_genes_coordinate)
+        anndata.obs["genes"] = np.array(list_genes_name)
+
+        return anndata
+
+
+
+
+##################################################################
+
+
+        self.selected_genes = selected_genes
+        self.gene_index_dict = {}
+        for gene_id in range(len(selected_genes)):
+            self.gene_index_dict[selected_genes[gene_id]] = gene_id
+
+        list_norm_expression_vectors = []
+        list_image_name = []
+        list_cell_id = []
+        dico_adata = {}
+        for image_name in dico_dico_commu:
+            list_norm_expression_vectors += list(dico_dico_commu[image_name][key_w].values())
+            list_image_name += [image_name] * len(dico_dico_commu[image_name][key_w])
+            list_cell_id += list(dico_dico_commu[image_name][key_w].keys())
+
+        for img_name in tqdm(self):
+            if str(type(self[img_name])) != "<class 'comseg.model.ComSeg'>":
+                continue
+
+        adata = ad.AnnData(np.array(list_norm_expression_vectors)[:, 0, :])
+        adata.var["features"] = selected_genes
+        adata.var_names = selected_genes
+        adata.obs["cell_id"] = list_cell_id
+        adata.obs["image_name"] = list_image_name
+
+
+
+
+
+
+
+
+
