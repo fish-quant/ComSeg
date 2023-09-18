@@ -16,31 +16,34 @@ def plot_result(nuclei,
                 title = None,
                 dico_cell_color = None,
                 figsize=(15, 15),
-                spots_size = 1):
+                spots_size = 1,
+                plot_outlier = True):
 
 
     mip_nuclei = np.amax(nuclei, 0)
     dico_spots_pos = {}  ## gene : [coord]
     unique_comm = np.unique([y[key_node] for x, y in G.nodes(data=True) if key_node in y])[:]
-    scale_xy = 1
-    for nuc_indice in unique_comm:
-        dico_spots_pos[nuc_indice] = []
-    for type in unique_comm:
-        dico_spots_pos[type] = [[y["y"], y["x"]] for x, y in G.nodes(data=True) if
-                                key_node in y and y[key_node] == type and y["gene"]
+    for label in unique_comm:
+        dico_spots_pos[label] = []
+    for label in unique_comm:
+        dico_spots_pos[label] = [[y["y"], y["x"]] for x, y in G.nodes(data=True) if
+                                key_node in y and y[key_node] == label and y["gene"]
                                 != "centroid"]
 
     if dico_cell_color is None:
         dico_cell_color = {}
-        for type in unique_comm:
-            dico_cell_color[type] = "#" + "%06x" % random.randint(0, 0xFFFFFF)
+        for label in unique_comm:
+            dico_cell_color[label] = "#" + "%06x" % random.randint(0, 0xFFFFFF)
 
     fig, ax = plt.subplots(figsize=figsize)
 
 
     for cell in dico_spots_pos.keys():
 
-        print(cell, len(dico_spots_pos[cell]))
+        if not plot_outlier:
+            if cell == 0:
+                continue
+        #print(cell, len(dico_spots_pos[cell]))
         if len(dico_spots_pos[cell]) == 0:
             continue
         ax.scatter(np.array(dico_spots_pos[cell])[:, 1], np.array(dico_spots_pos[cell])[:, 0],
@@ -49,7 +52,7 @@ def plot_result(nuclei,
                    s=spots_size)
 
     if title is None:
-        title = "cell_index_pred"
+        title = key_node
     plt.title(title)
     ax.imshow(mip_nuclei > 0, cmap='gist_gray', alpha=0.8)
     ax.imshow(mip_nuclei, cmap='gist_gray', alpha=0.8)
