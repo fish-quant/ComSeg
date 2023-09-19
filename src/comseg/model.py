@@ -15,11 +15,9 @@ return a count matrix of the image
 
 import os
 import sys
-from collections import Counter
 
 from tqdm import tqdm
 import networkx as nx
-import numpy as np
 import scipy.sparse as sp
 
 from sklearn.neighbors import NearestNeighbors
@@ -29,12 +27,10 @@ import anndata as ad
 
 sys.path.insert(1, os.getcwd() + "/code/")
 
-import leidenalg as la
-import igraph as ig
+
 #from unused_files.similarity_m import get_simialrity_matrix
 #from utils.data_processing import sctransform_from_parameters
-from sklearn import metrics
-import scipy
+
 import networkx.algorithms.community as nx_comm
 import numpy as np
 from sklearn.utils.extmath import weighted_mode
