@@ -3,7 +3,7 @@
 
 # Single cell spatial RNA profiling 
 
-ComSeg is designed to analysed image-based transcriptomic data.
+ComSeg is designed to analyse image-based transcriptomic data.
 
 ## Installation
 
