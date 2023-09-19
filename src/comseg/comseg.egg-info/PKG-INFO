@@ -1,0 +1,9 @@
+Metadata-Version: 2.1
+Name: comseg
+Version: 0.0.1
+Summary: CNN framework
+Home-page: https://github.com/tdefa/ComSeg_pkg
+Author: Thomas Defard
+Author-email: thomas.defard@mines-paristech.fr
+Project-URL: Bug Tracker, https://github.com/tdefa/ComSeg_pkg/issues
+Classifier: Programming Language :: Python :: 3.8
