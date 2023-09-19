@@ -1,7 +1,7 @@
 from setuptools import find_packages, setup
 
-#with open("README.md", "r", encoding="utf-8") as fh:
-#    long_description = fh.read()
+with open("README.md", "r", encoding="utf-8") as fh:
+    long_description = fh.read()
 
 # Package dependencies
 with open("requirements.txt", encoding="utf-8") as f:
@@ -13,14 +13,14 @@ setup(
     author="Thomas Defard",
     author_email="thomas.defard@mines-paristech.fr",
     description="CNN framework",
-    #long_description=long_description,
-    #long_description_content_type="text/markdown",
+    long_description=long_description,
+    long_description_content_type="text/markdown",
     url="https://github.com/tdefa/ComSeg_pkg",
     project_urls={"Bug Tracker": "https://github.com/tdefa/ComSeg_pkg/issues"},
     classifiers=[
         "Programming Language :: Python :: 3.8",
     ],
-    package_dir={"": "comseg"},
-    packages=find_packages(where="comseg"),
+    package_dir={"": "src"},
+    packages=find_packages(where="src"),
     install_requires=REQUIREMENTS,
 )
