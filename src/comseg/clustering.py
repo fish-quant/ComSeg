@@ -8,7 +8,6 @@ import sklearn
 
 import anndata as ad
 import numpy as np
-import ssam
 import pandas as pd
 from scipy.sparse import csr_matrix
 import scanpy as sc
@@ -16,6 +15,7 @@ import scanpy as sc
 from .utils.preprocessing import sctransform_from_parameters
 import scipy
 from matplotlib import pyplot as plt
+from .utils.preprocessing import run_sctransform
 """
 In situ clustering class
 take as intput a set of comseg instance
@@ -84,7 +84,7 @@ class InSituClustering():
         np.save("count_matrix", count_matrix)
         count_matrix = pd.DataFrame(count_matrix, columns=[str(e) for e in range(count_matrix.shape[1])])
         print(count_matrix.columns)
-        norm_expression_vectors, param_sctransform = ssam.run_sctransform(count_matrix,
+        norm_expression_vectors, param_sctransform = run_sctransform(count_matrix,
                                                                           debug_path=debug_path)
 
         self.param_sctransform = param_sctransform

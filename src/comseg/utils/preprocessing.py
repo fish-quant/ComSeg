@@ -92,7 +92,7 @@ from packaging import version
 import pandas as pd
 import subprocess
 import sys
-from time import time
+import time
 def run_sctransform(data, clip_range=None, verbose=True, debug_path=None, plot_model_pars=False, **kwargs):
     """
     this function is cpy fromm SSAM  https://github.com/HiDiHlabs/ssam
