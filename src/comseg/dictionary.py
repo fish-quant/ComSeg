@@ -18,8 +18,8 @@ import sys
 from tqdm import tqdm
 
 import anndata as ad
-
-
+from . import clustering
+from . import model
 sys.path.insert(1, os.getcwd() + "/code/")
 
 #from unused_files.similarity_m import get_simialrity_matrix

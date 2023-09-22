@@ -123,7 +123,7 @@ class ComSeg():
         list_features_order = [(k, dico_features_order[k]) for k in dico_features_order]
         G.add_nodes_from(list_features_order)
         print("adding edges")
-        for edges_index in tqdm(range(len(edges_list))):
+        for edges_index in range(len(edges_list)):
             edges = edges_list[edges_index]
             gene_source = G.nodes[edges[0]]['gene']
             gene_target = G.nodes[edges[1]]['gene']
@@ -203,7 +203,7 @@ class ComSeg():
         list_coordinates = []
         list_node_index = []
         list_prior = []
-        for index_commu in tqdm(range(len(comm))):
+        for index_commu in range(len(comm)):
             cluster_coordinate = []
             expression_vector = np.bincount([self.gene_index_dict[self.G.nodes[ind_node]["gene"]] for ind_node in comm[index_commu]],
                                             minlength = len(self.gene_index_dict))
@@ -268,7 +268,7 @@ class ComSeg():
             return prob_density
         point_tree = spatial.cKDTree(self.list_coordo_order)
         list_nn = point_tree.query_ball_point(self.list_coordo_order, self.agg_max_dist)
-        for node_index, node_data in tqdm(self.G.nodes(data=True)): ## create a kernel density estimation for each node
+        for node_index, node_data in self.G.nodes(data=True): ## create a kernel density estimation for each node
             if node_data["gene"] == 'centroid':
                 continue
             if remove_self_node:
@@ -544,7 +544,7 @@ class ComSeg():
                 raise ValueError("no pred, should be at least -1")
             scrna_unique_clusters.append(G.nodes[node_index]["key_pred"])
         scrna_unique_clusters = np.unique(scrna_unique_clusters)
-        for celltype in tqdm(scrna_unique_clusters, desc=f'celltype'):
+        for celltype in scrna_unique_clusters:
             ## get the node of celltype
             list_nodes_index = [node_index for node_index in G.nodes() if
                                 G.nodes[node_index][
@@ -553,7 +553,7 @@ class ComSeg():
             # print(top)
             centroid_list = [n for n, y in subgraph.nodes(data=True) if y["super_node_prior_key"] != 0]
             nb_centroid += len(centroid_list)
-            for cc in tqdm(list(nx.connected_components(subgraph))):
+            for cc in list(nx.connected_components(subgraph)):
                 # print(f'nb node in cc {len(cc)}')
                 if len(set(centroid_list).intersection(cc)) == 1:
                     nucleus_node = list(set(centroid_list).intersection(cc))[0]
@@ -565,9 +565,8 @@ class ComSeg():
                     dico_length = {}  # {centroid : length list}
                     dico_shortest_path = {}
                     # print(f'list_nuclei len  {len(list_nuclei)}')
-                    tqdm_list_nuclei = tqdm(list_nuclei,
-                                            desc=f' celltype {celltype}list_nuclei len  {len(list_nuclei)}')
-                    for nucleus_node in tqdm_list_nuclei:
+
+                    for nucleus_node in list_nuclei:
                         dico_expression_m[nucleus_node] = []
                         length, path = nx.single_source_dijkstra(G.subgraph(cc).to_undirected(),
                                                                  nucleus_node,

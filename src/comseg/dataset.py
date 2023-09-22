@@ -142,7 +142,6 @@ class ComSegDataset():
         gene_index_dico = {}
         for gene_id in range(len(self.selected_genes)):
             gene_index_dico[self.selected_genes[gene_id]] = gene_id #todo gene_index_dico to add in self
-        print(len(gene_index_dico))
         ## this part should be factorize with create_directed_nn_graph
         try:
             df_spots_label = df_spots_label.reset_index()
@@ -159,6 +158,7 @@ class ComSegDataset():
 
         dico_list_features = {}
         assert 'gene' in df_spots_label.columns
+        #df_spots_label =  df_spots_label[np.isin(df_spots_label.gene, self.selected_genes)]
         for feature in df_spots_label.columns:
             dico_list_features[feature] = list(df_spots_label[feature])
         list_features = list(dico_list_features.keys())
