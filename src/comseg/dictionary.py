@@ -14,7 +14,6 @@ then apply a community classification (in situ clustering class)
 
 import os
 import sys
-from collections import Counter
 
 from tqdm import tqdm
 
@@ -26,7 +25,7 @@ sys.path.insert(1, os.getcwd() + "/code/")
 #from unused_files.similarity_m import get_simialrity_matrix
 #from utils.data_processing import sctransform_from_parameters
 
-from comseg import clustering
+
 
 from pathlib import Path
 import numpy as np
