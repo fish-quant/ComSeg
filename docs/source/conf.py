@@ -27,10 +27,15 @@ release = '0.1'
 import sys
 autodoc_mock_imports = ["scanpy", "pyarrow", "anndata", "pandas", "tqdm",
                         "sklearn", "numpy", "networkx", "anndata", "leidenalg", "scikit-image",
-                            "seaborn", "tifffile", "ssam"]
+                            "seaborn", "tifffile", "ssam", "scipy"]
 
-
-
+autodoc_mock_imports += ["anndata","contourpy","cycler","fonttools","h5py","igraph","imageio",
+                         "importlib-metadata","importlib-resources","joblib","kiwisolver","lazy_loader","leidenalg",
+                         "llvmlite","matplotlib","natsort","networkx","numba","numpy","packaging","pandas","patsy",
+                         "Pillow","pyarrow","pynndescent","pyparsing","python-dateutil","python-igraph",
+                         "python-louvain","pytz","PyWavelets","scanpy","scikit-image","scikit-learn",
+                         "scikit-misc","scipy","seaborn","session-info","six","sparse","ssam",
+                         "statsmodels","stdlib-list","tbb","texttable","threadpoolctl","tifffile","tqdm","umap-learn","zipp",]
 import os
 
 sys.path.insert(0, os.path.abspath(os.path.join('..', '..', 'src')))
