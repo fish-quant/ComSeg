@@ -25,7 +25,10 @@ author = 'Thomas Defard'
 release = '0.1'
 
 import sys
-autodoc_mock_imports = ["scanpy", "pyarrow", "anndata", "pandas", "."]
+autodoc_mock_imports = ["scanpy", "pyarrow", "anndata", "pandas", "tqdm",
+                        "sklearn", "numpy", "networkx", "anndata", "leidenalg", "scikit-image",
+                            "seaborn", "tifffile", "ssam"]
+
 
 
 import os
@@ -41,11 +44,11 @@ sys.path.insert(0, os.path.abspath('../../src/comseg/utils'))
 sys.path.insert(0, os.path.abspath('../../src/comseg/clustering.py'))
 
 sys.path.insert(0, os.path.abspath('../../src'))
-#sys.path += ["/home/tom/anaconda3/envs/comseg_v0/lib/python3.8",
-#'/home/tom/anaconda3/envs/comseg_v0/lib/python3.8/lib-dynload',
-#'/home/tom/.local/lib/python3.8/site-packages',
-#'/home/tom/anaconda3/envs/comseg_v0/lib/python3.8/site-packages']
-#import sphinx_rtd_theme
+sys.path += ["/home/tom/anaconda3/envs/comseg_v0/lib/python3.8",
+'/home/tom/anaconda3/envs/comseg_v0/lib/python3.8/lib-dynload',
+'/home/tom/.local/lib/python3.8/site-packages',
+'/home/tom/anaconda3/envs/comseg_v0/lib/python3.8/site-packages']
+import sphinx_rtd_theme
 # -- General configuration ---------------------------------------------------
 
 # Add any Sphinx extension module names here, as strings. They can be
