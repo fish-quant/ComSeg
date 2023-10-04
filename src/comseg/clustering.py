@@ -34,9 +34,9 @@ __all__ = ["InSituClustering"]
 
 class InSituClustering():
     """
-    In situ clustering class take as attribute an anndata object containing the community expression vector
-    of RNA partition/community from one or many image. This class is in charge of identifying the single cell transcriptomic
-    cluster present in the dataset.
+    In situ clustering class takes as attribute an anndata object containing the community expression vectors
+    of RNA partitions/communities from one or many images. This class is in charge of identifying the single cell transcriptomic
+    clusters present in the dataset.
     """
 
     def __init__(self,
@@ -60,7 +60,9 @@ class InSituClustering():
     def compute_normalization_parameters(self,
                                          debug_path = None):
         """
-        Compute the scTRANSFORM normalization parameters from the class attribute anndata
+
+        Compute the ScTransform normalization parameters from the class attribute anndata
+
         :param debug_path:
         :return:
         """
@@ -109,19 +111,19 @@ class InSituClustering():
         Cluster the RNA partition/community expression vector to identify the single cell transcriptomic cluster present in the dataset
 
         :param size_commu_min: minimum number of RNA in a community to be considered for the clustering
-        :rtype size_commu_min: int
+        :type size_commu_min: int
         :param norm_vector: if True, the expression vector will be normalized using the scTRANSFORM normalization parameters
         :type norm_vector: bool
         :param n_pcs: number of principal component to compute for the clustering; Lets 0 if no pca
-        :rtype n_pcs: int
+        :type n_pcs: int
         :param n_comps: number of components to compute for the clustering; Lets 0 if no pca
-        :rtype n_comps: int
+        :type n_comps: int
         :param clustering_method: choose in ["leiden", "kmeans", "louvain"]
         :type clustering_method: str
         :param n_neighbors: number of neighbors similarity graph
-        :rtype n_neighbors: int
+        :type n_neighbors: int
         :param resolution: resolution parameter for the leiden/Louvain clustering
-        :rtype resolution: float
+        :type resolution: float
         :param n_clusters_kmeans: number of cluster for the kmeans clustering
         :rtype n_clusters_kmeans: int
         :param palette: color palette for the cluster list of (HEX) color
@@ -208,7 +210,7 @@ class InSituClustering():
         :type cluster_column_name: str
         :param aggregation_mode:  choose in ["mean", "median"]
         :type aggregation_mode: str
-        :return: scrna_centroids: list of centroid of each cluster. and list of cluster name
+        :return: scrna_centroids: list of centroids of each cluster. and list of cluster names
         :rtype: list[np.array], list[str]
 
         """
@@ -237,11 +239,11 @@ class InSituClustering():
                       cluster_column_name="leiden",
                       plot = True):
         """
-        Merge cluster based on the correlation of their centroid if need
+        Merge clusters based on the correlation of their centroid
 
-        :param nb_min_cluster:  minimum number of cluster to merge
+        :param nb_min_cluster:  minimum number of clusters to merge
         :type nb_min_cluster: int
-        :param min_merge_correlation: minimum correlation to merge cluster
+        :param min_merge_correlation: minimum correlation to merge clusters
         :type min_merge_correlation: float
         :param cluster_column_name:  clustering method used
         :type cluster_column_name: str
@@ -363,11 +365,11 @@ class InSituClustering():
         #todo remove small community
         """
         associate unclassified RNA community expression vector by using a knn classifier
-        and the already classify community
+        and the already classify communities
 
         :param key_pred: leave default
         :param unorm_vector_key: leave default
-        :param classify_mode:  choose in 'pca' or 'euclidien'. it either use the euclidian space or PCA space
+        :param classify_mode:  choose in 'pca' or 'euclidien'. it either uses the euclidian space or PCA space
         :param min_proba_small_commu: minimum probability to classify a small community based on the KNN classifier
         :return:
         """

@@ -38,10 +38,10 @@ __all__ = ["ComSegDict"]
 
 class ComSegDict():
     """
-    As a dataset is often compose of many separated images. It is requiere to create many comseg graph of RNA.
-    beside the in-situ clustering to identify the transcriptomic profile is more informative at the data scale.
-    To ease the analysis entire dataset we implement ComSegDict. It is a class that store many ComSeg object.
-    and allow to perform analysis at the dataset scale.
+    As a dataset is often compose of many separated images. It is requiered to create many ComSeg graph of RNAs.
+    besides, the in-situ clustering to identify the transcriptomic profile is more informative at the data scale.
+    To ease the analysis entire dataset we implement ComSegDict. It is a class that store many ComSeg object
+    and allows to perform analysis at the dataset scale.
 
     This class is implemented as a dictionary of ComSeg graph object
     """
@@ -60,7 +60,7 @@ class ComSegDict():
         :type dataset: ComSegDataset
         :param mean_cell_diameter: the expected mean cell diameter in µm default is 15µm
         :type mean_cell_diameter: float
-        :param clustering_method: choose in ["with_prior",  "louvain"], "with_prior" is our graph partioning/ community
+        :param clustering_method: choose in ["with_prior",  "louvain"], "with_prior" is our graph partioning / community
                 detection method taking into account prior knowledge
         :type clustering_method: str
         :param prior_keys: key of the prior cell assignment in the node attribute dictionary and in the input CSV file
@@ -72,7 +72,7 @@ class ComSegDict():
              prior_keys and super_node_prior_keys can be the different if two landmarks mask prior are available.
              exemple: super_node_prior_keys = "nucleus_landmak", prior_keys = "uncertain_cell_landmark"
         :type super_node_prior_keys: str
-        :param confidence_level:, confidence level for the prior knowledge (prior_keys) in the range [0,1]. 1 means that the prior knowledge is certain.
+        :param confidence_level: confidence level for the prior knowledge (prior_keys) in the range [0,1]. 1 means that the prior knowledge is certain.
         :type confidence_level: float
         """
 
@@ -141,11 +141,11 @@ class ComSegDict():
 
     def concatenate_anndata(self):
         """
-        concatenate all the anndata of community expression vector from all
-        the ComSeg graphs
+        concatenate all community expression vectors from all
+        the ComSeg graphs into a single anndata object
 
         :return: anndata
-        :rtype  AnnData
+        :rtype:  AnnData
         """
         self.global_anndata = ad.concat([self[img].community_anndata for img in self
                                       if str(type(self[img])) == "<class 'comseg.rst.model.ComSeg'>"])
@@ -159,7 +159,8 @@ class ComSegDict():
 
     def compute_community_vector(self,):
         """
-        for all the images in the dataset, this function create a graph of RNAN
+
+        for all the images in the dataset, this function creates a graph of RNAs
         and compute the community vectors
 
         :param self:
@@ -209,7 +210,7 @@ class ComSegDict():
 
 
         """
-        Cluster all toguether  the RNA partition/community expression vector for all the images in the dataset and
+        Cluster all together  the RNA partition/community expression vector for all the images in the dataset and
         identify the single cell transcriptomic cluster present in the dataset
 
 
@@ -218,21 +219,21 @@ class ComSegDict():
         #todo or add the current cleuter name to use in the self so it is reuse in  add_cluster_id_to_graph
 
         :param size_commu_min: minimum number of RNA in a community to be considered for the clustering
-        :rtype size_commu_min: int
+        :type size_commu_min: int
         :param norm_vector: if True, the expression vector will be normalized using the scTRANSFORM normalization parameters
         :type norm_vector: bool
         :param n_pcs: number of principal component to compute for the clustering; Lets 0 if no pca
-        :rtype n_pcs: int
+        :type n_pcs: int
         :param n_comps: number of components to compute for the clustering; Lets 0 if no pca
-        :rtype n_comps: int
+        :type n_comps: int
         :param clustering_method: choose in ["leiden", "kmeans", "louvain"]
         :type clustering_method: str
         :param n_neighbors: number of neighbors similarity graph
-        :rtype n_neighbors: int
+        :type n_neighbors: int
         :param resolution: resolution parameter for the leiden/Louvain clustering
-        :rtype resolution: float
+        :type resolution: float
         :param n_clusters_kmeans: number of cluster for the kmeans clustering
-        :rtype n_clusters_kmeans: int
+        :type n_clusters_kmeans: int
         :param palette: color palette for the cluster list of (HEX) color
         :type palette: list[str]
         :param min_merge_correlation: minimum correlation to merge cluster
@@ -310,6 +311,7 @@ class ComSegDict():
                                 clustering_method = "leiden_merged"):
 
         """
+
         Add transcriptional cluster id to each RNA molecule in the graph
 
         :param self:
@@ -395,8 +397,8 @@ class ComSegDict():
         distance='distance',
         max_distance=100):
         """
-        Associate RNA to landmark based on the both transcriptomic landscape and the
-        distance between the RNA and the centroid of the landmark
+        Associate RNAs to landmarks based on the both transcriptomic landscape and the
+        distance between the RNAs and the centroids of the landmark
 
 
         :param key_pred: key of the node attribute containing the cluster id (default "leiden_merged")
@@ -406,6 +408,7 @@ class ComSegDict():
         :param max_distance: maximum distance between a cell centroid and an RNA to be associated (default 100)
         :type max_distance: float
         :return:
+
         """
 
         for img_name in tqdm(self):
@@ -432,9 +435,10 @@ class ComSegDict():
                                    ):
 
         """
-        Return an anndata with the estimated expression vector of each cell in the dataset plus the spots position.
+        Return an anndata with the estimated expression vector of each cell in the dataset plus the spot positions.
+
         :param self:
-        :param key_cell_pred:
+        :param key_cell_pred: leave it to default
         :return:
         """
         list_image_name = []

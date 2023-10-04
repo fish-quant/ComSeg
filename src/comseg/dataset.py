@@ -41,8 +41,8 @@ class ComSegDataset():
     this class is in charge of :
 
     1) loading the CSV input
-    2)  computation of the co-expression matrix at the dataset scale
-    3)  add prior knowledge if available
+    2) computation of the co-expression matrix at the dataset scale
+    3) add prior knowledge if available
 
     The dataset class can be used like a dictionary of where the keys are the csv file names and the values are the csv
 
@@ -58,12 +58,13 @@ class ComSegDataset():
 
         :param path_dataset_folder: path to the folder containing the csv files
         :type path_dataset_folder: str
-        :param path_to_mask_prior: path to the folder containing the mask priors. they must have the same name as the corresponding csv files
+        :param path_to_mask_prior: path to the folder containing the mask priors. They must have the same name as the corresponding csv files
         :type path_to_mask_prior:  str
         :param mask_file_extension: file extension of the mask priors
         :default mask_file_extension: ".tiff"
         :param dict_scale: dictionary containing the pixel/voxel size of the images in µm default is {"x": 0.103, 'y': 0.103, "z": 0.3}
         :type dict_scale: dict
+
         """
 
 
@@ -109,15 +110,15 @@ class ComSegDataset():
                             overwrite = False):
 
         """
-        this function add prior knowledge to the dataset. It adds a column in the csv files indicating prior label of each spot.
-        It takes the positon of each spots and add the corresponding value of the mask prior at this position.
+
+        This function add prior knowledge to the dataset. It adds a column in the csv files indicating prior label of each spot.
+        It takes the positon of each spot and add the corresponding value of the mask prior at this position.
 
         :param prior_keys_name: name of the column to add in the csv files containing the prior label of each spot
         :type str
         :param overwrite: if True, overwrite the prior_keys_name column if it already exists
         :type bool
-        :return:
-        None
+        :return: None
         """
         for image_path_df in self.path_dataset_folder.glob('*.csv'):
             print(f"add prior to {image_path_df.stem}")
@@ -153,21 +154,20 @@ class ComSegDataset():
                                       df_spots_label,
                                       n_neighbors=5,
                                       radius=5,
-                                      mode="dist_weighted",
                                       ):
 
 
         """
-        compute the co-expression score matrix for the RNA spatial distribution
+        Compute the co-expression score matrix for the RNA spatial distribution
 
-        :param df_spots_label:  dataframe with the columns x,y,z,gene. they coordinate be rescaled in µm by dict_scale attribute of the dataset object
+        :param df_spots_label:  dataframe with the columns x,y,z,gene. the coordinates are rescaled in µm by dict_scale attribute of the dataset object
         :type df_spots_label: pd.DataFrame
         :param n_neighbors: maximum number of neighbors default is 40
         :type n_neighbors: int
-        :param radius: maximum radius of neighbors should be set proportionnaly to expected cell size
-        :return:
-        count_matrix of shape (n_genes, N_rna) where n_genes is the number of unique genes in df_spots_label
-        each row is an 'RNA expression vector' summarizing local expression neighborhood of the molecule
+        :param radius: maximum radius of neighbors. It should be set proportionnaly to expected cell size
+        :return: count_matrix of shape (N_rna,  n_genes) where n_genes is the number of unique genes in df_spots_label
+        each row is an 'RNA expression vector' summarizing local expression neighborhood of a molecule
+        :rtype: np.array
         """
 
         gene_index_dico = {}
@@ -233,8 +233,8 @@ class ComSegDataset():
         :type count_matrix: np.array
         :param distance:  choose in ["pearson", "spearman"] default is pearson
         :type distance: str
-        :return:
-        a dictionary of dictionary corelation between genes dict[gene_source][gene_target] = correlation
+        :return: a dictionary of dictionary corelation between genes dict[gene_source][gene_target] = correlation
+        :rtype: dict
         """
         import math
         assert distance in ["spearman", "pearson"]
@@ -285,11 +285,9 @@ class ComSegDataset():
         :param per_images:
         :param sampling:
         :param sampling_size:
-        :return:
-        dico_proba_edge : a dictionary of dictionary corelation between genes dict[gene_source][gene_target] = correlation
-        count_matrix : the count matrix used to compute the correlation
-        :rtype dico_proba_edge: dict
-        :rtype count_matrix: np.array
+        :return: dico_proba_edge : a dictionary of dictionary correlation between genes. dict[gene_source][gene_target] = correlation
+        :return: count_matrix : the count matrix used to compute the correlation
+        :rtype:  dict, np.array
         """
 
         dico_proba_edge = {}
