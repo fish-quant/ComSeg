@@ -12,7 +12,7 @@ return a count matrix of the image
 
 #%%
 
-
+import numpy as np
 import os
 import sys
 
@@ -23,6 +23,8 @@ import scipy.sparse as sp
 from sklearn.neighbors import NearestNeighbors
 from scipy.sparse import csr_matrix
 import anndata as ad
+import pandas as pd
+
 
 
 sys.path.insert(1, os.getcwd() + "/code/")
@@ -46,19 +48,56 @@ def normal_dist(x , mean , sd):
 
 
 class ComSeg():
+    """
+    Class to the generate the graph of RNA spots from a CSV file/image
+    this class is in charge of :
+    - create the graph
+    - apply community detection / graph partioning
+    - add label the communities computed by the instance of the class InSituClustering
+    - add the centroid of the cells in the graph
+    - associate RNA to cell
+    - compute the cell-by-gene matrix of the input sample
+
+
+    """
 
     def __init__(self,
                 df_spots_label,
                 selected_genes,
+                 dict_co_expression,
                 dict_scale={"x": 0.103, 'y': 0.103, "z": 0.3},  # in micrometer
                 mean_cell_diameter=15,  # in micrometer
-                max_cell_length=200,  # in micrometer
                 k_nearest_neighbors = 10,
                 edge_max_length = None,
                 eps_min_weight =  0.01,
-                resolution =1
+
+
                  ):
+
+        """
+        :param df_spots_label: dataframe of the spots with column x,y,z, gene and optionally the prior label column
+        :type df_spots_label: pd.DataFrame
+        :param selected_genes: list of genes to consider
+        :type selected_genes: list[str]
+        :param dict_scale: dictionary containing the pixel/voxel size of the images in µm default is {"x": 0.103, 'y': 0.103, "z": 0.3}
+        :type dict_scale: dict
+        :param mean_cell_diameter: the expected mean cell diameter in µm default is 15µm
+        :type mean_cell_diameter: float
+        :param k_nearest_neighbors: number of nearest neighbors to consider for the graph construction default is 10
+        :type k_nearest_neighbors: int
+        :param edge_max_length: default is mean_cell_diameter / 4
+        :type edge_max_length: float
+        :param eps_min_weight: minumum edge weigth default is 0.01
+        :type eps_min_weight: float
+
+
+
+        """
+
+
+
         self.df_spots_label = df_spots_label
+        self.dict_co_expression = dict_co_expression
         self.dict_scale = dict_scale
         self.k_nearest_neighbors = k_nearest_neighbors
         if edge_max_length is None:
@@ -69,7 +108,6 @@ class ComSeg():
         self.gene_index_dict = {}
         for gene_id in range(len(selected_genes)):
             self.gene_index_dict[selected_genes[gene_id]] = gene_id
-
         self.agg_sd =  1
         self.agg_max_dist = mean_cell_diameter/2
         self.dico_xyz_index = {"x": 2, "y":1, "z":0 }
@@ -78,9 +116,13 @@ class ComSeg():
     ## create directed graph
 
     def create_graph(self,
-                     #n_neighbors=5, self.k_nearest_neighbors
-                     dict_co_expression=None,
                      ):
+        """
+        create the graph of the RNA nodes, all the graph generation parameters are set in the __init__ function
+
+        :return a graph of the RNA spots
+        :rtype nx.Graph
+        """
         try:
             self.df_spots_label = self.df_spots_label.reset_index()
         except Exception as e:
@@ -105,7 +147,6 @@ class ComSeg():
             dico_features_order[node] = list_features_order[node][1]
         for node in range(len(list_features_order)):
             dico_features_order[node]["nb_mol"] = 1
-        print("computing knn")
         nbrs = NearestNeighbors(n_neighbors=self.k_nearest_neighbors,
                                 algorithm='ball_tree').fit(list_coordo_order)
         ad = nbrs.kneighbors_graph(list_coordo_order, mode="connectivity") ## can be optimize here
@@ -122,14 +163,13 @@ class ComSeg():
         G = nx.DiGraph()  # oriented graph
         list_features_order = [(k, dico_features_order[k]) for k in dico_features_order]
         G.add_nodes_from(list_features_order)
-        print("adding edges")
         for edges_index in range(len(edges_list)):
             edges = edges_list[edges_index]
             gene_source = G.nodes[edges[0]]['gene']
             gene_target = G.nodes[edges[1]]['gene']
             G.add_edge(edges[0], edges[1])
-            weight = np.max(dict_co_expression[gene_source][gene_target], 0) + self.eps_min_weight   ##
-            relative_weight = dict_co_expression[gene_source][gene_target]
+            weight = np.max(self.dict_co_expression[gene_source][gene_target], 0) + self.eps_min_weight   ##
+            relative_weight = self.dict_co_expression[gene_source][gene_target]
             G[edges[0]][edges[1]]["weight"] = weight
             G[edges[0]][edges[1]]["relative_weight"] = relative_weight
             G[edges[0]][edges[1]]["distance"] = distance_list[edges_index]
@@ -145,8 +185,7 @@ class ComSeg():
     ## get community detection vector
 
     def community_vector(self,
-                         clustering_method="louvain_with_prior",
-                         weights_name="weight",
+                         clustering_method="with_prior",
 
                          prior_keys="in_nucleus",
                          seed=None,
@@ -154,15 +193,37 @@ class ComSeg():
                          confidence_level=1,
                          # param for multigrpah leiden
                          ):
+        """
+        Partion the graph into communities/set of RNA and compute and store the "community expression vector
+         in the ''community_anndata'' class attribute
+
+        :param clustering_method: choose in ["with_prior",  "louvain"], "with_prior" is our graph partioning/ community
+                detection method taking into account prior knowledge
+        :type clustering_method: str
+
+        :param prior_keys: key of the prior cell assignment in the node attribute dictionary and in the input CSV file
+        :type prior_keys: str
+        :param seed: (optional) seed for the grpah partioning initialization
+        :type seed: int
+        :param super_node_prior_keys: key of the prior cell assignment in the node attribute
+             and in the input CSV file that is certain. node labeled with the same supernode prior key will be merged.
+             prior_keys and super_node_prior_keys can be the different if two landmarks mask prior are available.
+             exemple: super_node_prior_keys = "nucleus_landmak", prior_keys = "uncertain_cell_landmark"
+        :type super_node_prior_keys: str
+        :param confidence_level:, confidence level for the prior knowledge (prior_keys) in the range [0,1]. 1 means that the prior knowledge is certain.
+        :type confidence_level: float
+        :return: a graph with a new node attribute "community" with the community detection vector
+        :rtype: nx.Graph
+        """
 
 
         nb_egde_total = len(self.G.edges())
 
         ### if prior create new graph + matching super-node dico
         if super_node_prior_keys is not None:
-            print(f'creation of  super node with {super_node_prior_keys}')
+            #print(f'creation of  super node with {super_node_prior_keys}')
             partition = []
-            assert clustering_method in ["louvain_with_prior"]
+            assert clustering_method in ["with_prior"]
             list_nodes = np.array([index for index, data in self.G.nodes(data=True)])
 
             array_super_node_prior = np.array([data[super_node_prior_keys] for index, data in self.G.nodes(data=True)])
@@ -178,20 +239,20 @@ class ComSeg():
         else:
             partition = None
 
-
         assert nx.is_directed(self.G)
         if clustering_method == "louvain":
             comm = nx_comm.louvain_communities(self.G.to_undirected(reciprocal=False),
-                                               weight=weights_name,
+                                               weight="weight",
                                                resolution=self.resolution,
                                                seed=seed)
 
 
-        if clustering_method == "louvain_with_prior":
+
+        if clustering_method == "with_prior":
             from .utils import custom_louvain
             comm, final_graph = custom_louvain.louvain_communities(
                     G=self.G.to_undirected(reciprocal=False),
-                    weight=weights_name,
+                    weight="weight",
                     resolution=self.resolution,
                     threshold=0.0000001,
                     seed=seed,
@@ -199,10 +260,13 @@ class ComSeg():
                     prior_key=prior_keys,
                     confidence_level=confidence_level)
 
+
         list_expression_vectors = []
         list_coordinates = []
         list_node_index = []
         list_prior = []
+
+
         for index_commu in range(len(comm)):
             cluster_coordinate = []
             expression_vector = np.bincount([self.gene_index_dict[self.G.nodes[ind_node]["gene"]] for ind_node in comm[index_commu]],
@@ -211,7 +275,7 @@ class ComSeg():
                 if self.G.nodes[node]['gene'] == "centroid":
                         continue
                 self.G.nodes[node]["index_commu"] =  index_commu
-                if clustering_method == "louvain_with_prior":
+                if clustering_method == "with_prior":
                     self.G.nodes[node]["index_commu_in_nucleus"] =  final_graph.nodes[index_commu]['prior_index']
                 if "z" in self.G.nodes[0]:
                     cluster_coordinate.append([self.G.nodes[node]['x'],
@@ -243,7 +307,7 @@ class ComSeg():
 
         assert nb_egde_total == len(self.G.edges()) # check it is still the same graph
         self.community_anndata = anndata
-        self.estimation_density_vec(
+        self._estimation_density_vec(
                                # max_dist = 5,
                                key_word="kernel_vector",
                                remove_self_node=True,
@@ -251,9 +315,36 @@ class ComSeg():
 
         return self.community_anndata
 
+    def add_cluster_id_to_graph(self,
+                                dict_cluster_id,
+                                clustering_method = "with_prior"):
+        """
+        add transcriptional cluster id to each RNA molecule in the graph
+
+        :param dict_cluster_id: dict {index_commu : cluster_id}
+        :type dict_cluster_id: dict
+        :param clustering_method: clustering method used to get the community
+        :type clustering_method: str
+        :return:
+        :rtype: nx.Graph
+        """
 
 
-    def estimation_density_vec(self,
+        list_index_commu = list(self.community_anndata.obs['index_commu'])
+        ## get a dico {commu : cluster ID}
+        dico_commu_cluster = {}
+        for index_commu in dict_cluster_id:
+            dico_commu_cluster[list_index_commu[index_commu]] = dict_cluster_id[index_commu]
+        G = self.G
+        for node in tqdm(G.nodes()):
+            if G.nodes[node]['gene'] == 'centroid':
+                continue
+            G.nodes[node][clustering_method] = str(dico_commu_cluster[G.nodes[node]['index_commu']])
+        self.G = G
+
+
+
+    def _estimation_density_vec(self,
                                #max_dist = 5,
                                 key_word = "kernel_vector",
                                remove_self_node = True,
@@ -310,6 +401,13 @@ class ComSeg():
 
     ### add centroids to the graph
     def add_centroids(self, dict_cell_centroid):
+
+        """
+        add centroids to the graph
+        :param dict_cell_centroid: dict of centroid coordinate  {cell : {z:,y:,x:}}
+        :type dict_cell_centroid: dict
+        :return:
+        """
         for cell, centroid in dict_cell_centroid.items():
             centroid  = np.array(centroid)
             if centroid.ndim == 2:
@@ -332,12 +430,30 @@ class ComSeg():
     def classify_centroid(self,
                           dict_cell_centroid,
                           n_neighbors = 15,
-                            dict_in_pixel = True,
+                          dict_in_pixel = True,
                           max_dist_centroid = None,
                           key_pred = "leiden_merged",
                           distance = "gaussian",
                           convex_hull_centroid = True,
                           ):
+        """
+        classify cell  based on their  centroid neighbors RNA label from ``add_cluster_id_to_graph()``
+
+        :param dict_cell_centroid: dict of centroid coordinate  {cell : {z:,y:,x:}}
+        :type dict_cell_centroid: dict
+        :param n_neighbors: number of neighbors to consider for the classification of the centroid (default 15)
+        :type n_neighbors: int
+        :param dict_in_pixel: if True the centroid are in pixel and rescal if False the centroid are in um (default True)
+        :type dict_in_pixel: bool
+        :param max_dist_centroid: maximum distance to consider for the centroid (default None)
+        :type max_dist_centroid: int
+        :param key_pred: key of the node attribute containing the cluster id (default "leiden_merged")
+        :type key_pred: str
+        :param convex_hull_centroid: check that cell centroid is in the convex hull of its RNA neighbors (default True). If not the cell centroid is not classify to avoid artefact misclassification
+        :type convex_hull_centroid: bool
+        :return:
+        :rtype nx.Graph
+        """
 
         self.dict_cell_centroid = dict_cell_centroid
 
@@ -364,8 +480,7 @@ class ComSeg():
         ad_nuc_centroid = nbrs.kneighbors_graph(list_coordo_order_nuc_centroid)  ## can be optimize here
         distance_nuc_centroid = nbrs.kneighbors_graph(list_coordo_order_nuc_centroid, mode='distance')
 
-        node_nb = len(self.list_coordo_order)
-        nb_node_add = 0
+
         dico_nuclei_centroid =  {}
         for nuc_index in range(len(self.dict_cell_centroid)):
 
@@ -455,16 +570,6 @@ class ComSeg():
 
             node_index = len(self.list_coordo_order) - 1 + nuc
             self.G.add_nodes_from([(node_index, dico_nuclei_centroid[nuc])])
-            #self.G.nodes[node_index]["type_list"] = dico_nuclei_centroid[nuc]["type_list"]
-            #self.G.nodes[node_index]["gr_type_list"] = dico_nuclei_centroid[nuc]["gr_type_list"]
-            #self.G.nodes[node_index]["ngb_distance"] = dico_nuclei_centroid[nuc]["ngb_distance"]
-            #self.G.nodes[node_index]["ngb_gr_cell"] = dico_nuclei_centroid[nuc]["ngb_gr_cell"]
-            #self.G.nodes[node_index]["ngb_distance_weights"] = dico_nuclei_centroid[nuc]["ngb_distance_weights"]
-            #self.G.nodes[node_index]["gaussian"] = dico_nuclei_centroid[nuc]["gaussian"]
-            #self.G.nodes[node_index]["gene"] = dico_nuclei_centroid[nuc]["gene"]
-            #self.G.nodes[node_index]["cell"] = dico_nuclei_centroid[nuc]["cell"]
-            #self.G.nodes[node_index]["in_nucleus"] = dico_nuclei_centroid[nuc]["in_nucleus"]
-            #self.G.nodes[node_index][key_pred] = pred_cluster
             for ii in array_index_nn:
                 self.G.add_edge(node_index, ii)
                 if nuc == self.G.nodes[ii]['in_nucleus']:
@@ -482,15 +587,20 @@ class ComSeg():
                          key_pred = "leiden_merged",
                          super_node_prior_key='in_nucleus',
                          distance='distance',
-                         max_distance=""):
+                         max_distance=100):
 
         """
-        :param rna_landmark:
-        :param key_pred:
-        :param max_dist_centroid:
-        :param distance:
-        :param convex_hull_centroid:
+        Associate RNA to landmark based on the both transcriptomic landscape and the
+        distance between the RNA and the centroid of the landmark
+
+        :param key_pred: key of the node attribute containing the cluster id (default "leiden_merged")
+        :type key_pred: str
+        :param super_node_prior_key:
+        :type super_node_prior_key: str
+        :param max_distance: maximum distance between a cell centroid and an RNA to be associated (default 100)
+        :type max_distance: float
         :return:
+        :rtype nx.Graph
         """
         ## merge supernodes belonging to the nuclei landmark
         from .utils.utils_graph import _gen_graph
@@ -532,7 +642,7 @@ class ComSeg():
 
         """
 
-        print(f'max distance is {max_distance}')
+        #print(f'max distance is {max_distance}')
 
         nn_find = 0
         find = 0
@@ -620,6 +730,13 @@ class ComSeg():
                 self,
                key_cell_pred =  'cell_index_pred',
                ):
+        """
+        Generate an anndata storing the estimated expression vector and their spots coordinates
+
+        :param key_cell_pred:  key of the cell prediction in the graph (default cell_index_pred)
+        :type key_cell_pred: str
+        :return:
+        """
 
         dico_cell_genes = {}
         dico_cell_genes_coordinate = {}
@@ -661,40 +778,42 @@ class ComSeg():
         anndata.var_names = self.selected_genes
         anndata.obs["cell_id"] = list_cell_id
         anndata.obs["centroid"] = list_cell_centroid
-        anndata.obs["spots_coordinates"] = np.array(list_cell_genes_coordinate)
-        anndata.obs["genes"] = np.array(list_genes_name)
+        #anndata.obs["spots_coordinates"] = np.array(list_cell_genes_coordinate)
+        #anndata.obs["genes"] = np.array(list_genes_name)
+
+        ### create csv file
+        csv_list_z = []
+        csv_list_y = []
+        csv_list_x = []
+        csv_list_gene = []
+        csv_list_cell = []
+        csv_list_cell_type = []
+        for cell_index in range(len(list_cell_id)):
+            if len(list_genes_name[cell_index]) > 0:
+                csv_list_z += list(np.array(list_cell_genes_coordinate[cell_index])[:, 0])
+                csv_list_y += list(np.array(list_cell_genes_coordinate[cell_index])[:, 1])
+                csv_list_x += list(np.array(list_cell_genes_coordinate[cell_index])[:, 2])
+
+
+                csv_list_cell += [list_cell_id[cell_index]] * len(list_genes_name[cell_index])
+                csv_list_gene += list_genes_name[cell_index]
+                #csv_list_cell_type += [list_cell_type[cell_index]] * len(list_genes_name[cell_index])
+
+        df_spots = pd.DataFrame({"z": csv_list_z,
+                                 "y": csv_list_y,
+                                 "x": csv_list_x,
+                                 "gene": csv_list_gene,
+                                 "cell": csv_list_cell})
+
+        anndata.uns["df_spots"] = df_spots
 
         return anndata
 
 
 
 
+
 ##################################################################
-
-
-        self.selected_genes = selected_genes
-        self.gene_index_dict = {}
-        for gene_id in range(len(selected_genes)):
-            self.gene_index_dict[selected_genes[gene_id]] = gene_id
-
-        list_norm_expression_vectors = []
-        list_image_name = []
-        list_cell_id = []
-        dico_adata = {}
-        for image_name in dico_dico_commu:
-            list_norm_expression_vectors += list(dico_dico_commu[image_name][key_w].values())
-            list_image_name += [image_name] * len(dico_dico_commu[image_name][key_w])
-            list_cell_id += list(dico_dico_commu[image_name][key_w].keys())
-
-        for img_name in tqdm(self):
-            if str(type(self[img_name])) != "<class 'comseg.model.ComSeg'>":
-                continue
-
-        adata = ad.AnnData(np.array(list_norm_expression_vectors)[:, 0, :])
-        adata.var["features"] = selected_genes
-        adata.var_names = selected_genes
-        adata.obs["cell_id"] = list_cell_id
-        adata.obs["image_name"] = list_image_name
 
 
 

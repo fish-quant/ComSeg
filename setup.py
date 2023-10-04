@@ -8,7 +8,7 @@ with open("requirements.txt", encoding="utf-8") as f:
     REQUIREMENTS = [l.strip() for l in f.readlines() if l]
 
 setup(
-    name="comseg",
+    name="comseg.rst",
     version="0.0.1",
     author="Thomas Defard",
     author_email="thomas.defard@mines-paristech.fr",

@@ -12,61 +12,58 @@ import pandas as pd
 from scipy.sparse import csr_matrix
 import scanpy as sc
 
-from .utils.preprocessing import sctransform_from_parameters
+#from .utils.preprocessing import sctransform_from_parameters
 import scipy
 from matplotlib import pyplot as plt
-from .utils.preprocessing import run_sctransform
+from utils.preprocessing import run_sctransform, select_genes_for_sct
 """
 In situ clustering class
-take as intput a set of comseg instance
+take as intput a set of comseg.rst instance
 compute in_situclustering
 label the community
 save parameters to labeled other community with in the pca or euclidian space
 
 compute the norm parameter if need
 norm expression matrix
-
 """
 
 __all__ = ["InSituClustering"]
 
-def select_genes_for_sct(vec = None,
-                 genes = None,
-                 min_expr = 0.01,
-                 min_cell = 5):
-    """
-    Select the gene where it is possible to apply sctransform
-    default value from original vst :https://github.com/satijalab/sctransform/blob/master/R/vst.R
-    :param vec:
-    :param analysis: need only if vec is None
-    :param genes:
-    :param min_expr: default 0.01
-    :param min_cell: default 5
-    :return:
-    """
-    if type(vec) != type(np.array([])):
-        vec = vec.toarray() #sparse object for ex
-    bool_index  = np.sum(vec > min_expr, axis=0) >= min_cell
-    if bool_index.ndim == 2:
-        bool_index = bool_index[0]
-    return bool_index, np.array(genes)[bool_index]
 
 
 
 class InSituClustering():
+    """
+    In situ clustering class take as attribute an anndata object containing the community expression vector
+    of RNA partition/community from one or many image. This class is in charge of identifying the single cell transcriptomic
+    cluster present in the dataset.
+    """
 
     def __init__(self,
                 anndata,
-                 selected_genes,
-                 normalize = True,):
+                 selected_genes,):
+        """
+        :param anndata: anndata object containing the expression vector of the community.
+                The anndata can be the concatenation of several anndata object from different ComSeg instance
+        :type anndata: anndata object
+
+        :param selected_genes: list of genes to take into account for the clustering
+                the gene list order will define the order of the gene in the expression vector
+        :type selected_genes: list[str]
+        """
+
         self.anndata = anndata  ## contain the expression vector of all commu
         self.selected_genes = selected_genes
-        self.normalize = normalize
         self.anndata_cluster = None ## contain the expression vector of the cluster commu ie more than x RNA
 
 
     def compute_normalization_parameters(self,
                                          debug_path = None):
+        """
+        Compute the scTRANSFORM normalization parameters from the class attribute anndata
+        :param debug_path:
+        :return:
+        """
         bool_index, new_selected_genes = select_genes_for_sct(
             vec=self.anndata.X,
             genes=self.selected_genes,
@@ -108,13 +105,37 @@ class InSituClustering():
                               n_clusters_kmeans = 4,
                               palette = None,
                               plot_umap = False):
+        """
+        Cluster the RNA partition/community expression vector to identify the single cell transcriptomic cluster present in the dataset
+
+        :param size_commu_min: minimum number of RNA in a community to be considered for the clustering
+        :rtype size_commu_min: int
+        :param norm_vector: if True, the expression vector will be normalized using the scTRANSFORM normalization parameters
+        :type norm_vector: bool
+        :param n_pcs: number of principal component to compute for the clustering; Lets 0 if no pca
+        :rtype n_pcs: int
+        :param n_comps: number of components to compute for the clustering; Lets 0 if no pca
+        :rtype n_comps: int
+        :param clustering_method: choose in ["leiden", "kmeans", "louvain"]
+        :type clustering_method: str
+        :param n_neighbors: number of neighbors similarity graph
+        :rtype n_neighbors: int
+        :param resolution: resolution parameter for the leiden/Louvain clustering
+        :rtype resolution: float
+        :param n_clusters_kmeans: number of cluster for the kmeans clustering
+        :rtype n_clusters_kmeans: int
+        :param palette: color palette for the cluster list of (HEX) color
+        :type palette: list[str]
+        :param plot_umap: if True, plot the umap of the cluster
+        :return:
+        """
 
         #### select vector with nb of rna superior to size_commu_min
 
         bool_index_row = np.array(self.anndata.obs['nb_rna']) > size_commu_min
 
 
-        if self.normalize: ## apply sctrasnform
+        if norm_vector: ## apply sctrasnform
             if not  hasattr(self, "param_sctransform"):
                 raise ValueError("You need to compute the normalization parameters with 'compute_normalization_parameters' before clustering ")
             anndata = self.anndata[bool_index_row, self.genes_to_take]
@@ -174,37 +195,32 @@ class InSituClustering():
 
         return self.anndata
 
-    """n_neighbors=args.in_situ_clustering_n_neighbors,
-    n_comps=args.in_situ_n_comps,
-    n_pcs=args.in_situ_n_pcs,
-    resolution=args.in_situ_resolution,
-    clustering_method=clustering_method,
-    new_selected_genes=new_selected_genes,
-    bool_index=bool_index,
-    param_sctransform=param_sctransform,
-    palette=palette,
-    divide_by_norm=args.divide_by_norm,
-    vector_key=args.agregation_mode,  # args.agregation_mode,
-    unorm_vector_key="unorm_vector",
-    n_clusters_kmeans=args.n_clusters_kmeans,
-    max_number_image=len(dico_dico_commu),
-    update_graph=True,
-    divide_by_nb_spots=False, """
 
-    ### ADD FCT TO MERGE CLUSTER  WITH A PREDEFINE NUMBER OF CLUSTER TO MERGE
+    ###TODO  ADD FCT TO MERGE CLUSTER  WITH A PREDEFINE NUMBER OF CLUSTER TO MERGE
 
-    def cluster_centroid(self, ## withput normalization but
+    def get_cluster_centroid(self, ## withput normalization but
                       cluster_column_name = "leiden",
-                       agregation_mode = "mean"):
-        assert agregation_mode in ["mean", "median"], "arrgration_mode must be 'mean' or 'median'"
+                       aggregation_mode = "mean"):
+        """
+        Compute the centroid of each transcriptomic cluster
+
+        :param cluster_column_name:  name of the column containing the cluster label i.e. the method name
+        :type cluster_column_name: str
+        :param aggregation_mode:  choose in ["mean", "median"]
+        :type aggregation_mode: str
+        :return: scrna_centroids: list of centroid of each cluster. and list of cluster name
+        :rtype: list[np.array], list[str]
+
+        """
+        assert aggregation_mode in ["mean", "median"], "arrgration_mode must be 'mean' or 'median'"
         scrna_unique_clusters = np.unique(list(self.anndata_cluster.obs[cluster_column_name]))
         scrna_centroids = []
         for cl in scrna_unique_clusters:
             print(cl)
-            if agregation_mode == "median":
+            if aggregation_mode == "median":
                 centroid = np.median(self.anndata_cluster[self.anndata_cluster.obs[cluster_column_name] == cl].X, axis=0)
             else:
-                assert agregation_mode == "mean"
+                assert aggregation_mode == "mean"
                 centroid = np.mean(self.anndata_cluster[self.anndata_cluster.obs[cluster_column_name] == cl].X, axis=0)
         # print(mean)
             scrna_centroids.append(np.asarray(centroid)[0])
@@ -220,6 +236,18 @@ class InSituClustering():
                       min_merge_correlation = 0.8,
                       cluster_column_name="leiden",
                       plot = True):
+        """
+        Merge cluster based on the correlation of their centroid if need
+
+        :param nb_min_cluster:  minimum number of cluster to merge
+        :type nb_min_cluster: int
+        :param min_merge_correlation: minimum correlation to merge cluster
+        :type min_merge_correlation: float
+        :param cluster_column_name:  clustering method used
+        :type cluster_column_name: str
+        :param plot:
+        :return:
+        """
 
         scrna_unique_clusters, scrna_centroids = (list(t) for t in zip(*sorted(
             zip(np.array(self.scrna_unique_clusters).astype(int), self.scrna_centroids))))
@@ -324,27 +352,25 @@ class InSituClustering():
         return norm_expression_vectors, proba, list_pred_rna_seq
 
     def classify_small_community(self,
-        size_commu_max = np.inf,
-        size_commu_min_classif = 0,
+        #size_commu_min_classif = 0,
         key_pred = "leiden_merged",
-        unorm_vector_key = "unorm_vector",
+       # unorm_vector_key = "unorm_vector",
         classify_mode = "pca",
-        min_correlation = 0,
+       # min_correlation = 0,
         min_proba_small_commu = 0,
           ):
 
-        """"
-        todo remove small community
-        :param size_commu_max:
-        :param size_commu_min_classif:
-        :param key_pred:
-        :param unorm_vector_key:
-        :param classify_mode:
-        :param min_correlation:
-        :param min_proba_small_commu:
+        #todo remove small community
+        """
+        associate unclassified RNA community expression vector by using a knn classifier
+        and the already classify community
+
+        :param key_pred: leave default
+        :param unorm_vector_key: leave default
+        :param classify_mode:  choose in 'pca' or 'euclidien'. it either use the euclidian space or PCA space
+        :param min_proba_small_commu: minimum probability to classify a small community based on the KNN classifier
         :return:
         """
-
         if classify_mode == 'pca' or classify_mode == 'euclidien':
             kn_neighb = sklearn.neighbors.KNeighborsClassifier(
                 n_neighbors=10,
@@ -376,7 +402,6 @@ class InSituClustering():
 
             bool_index_unclassified = np.array(self.anndata.obs[key_pred]) == '-1'
             index_unclassified = np.nonzero(bool_index_unclassified)[0]
-
             ## get unclassified community  expression vector
             unclassified_vector = self.anndata[index_unclassified,
                                   self.genes_to_take].X.toarray()

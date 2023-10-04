@@ -9,6 +9,19 @@ from tqdm import tqdm
 from sklearn.utils.random import sample_without_replacement
 import scipy
 
+
+################" sc tranform ####################
+import os
+from tempfile import mkdtemp, TemporaryDirectory
+import pyarrow
+from packaging import version
+import pandas as pd
+import subprocess
+import sys
+import time
+
+
+
 #from utils.seg_preprocessing import generate_dico_centroid
 
 
@@ -83,16 +96,6 @@ def expression_correlation_from_anndata(anndata,
     return dico_proba_edge
 
 
-
-################" sc tranform ####################
-import os
-from tempfile import mkdtemp, TemporaryDirectory
-import pyarrow
-from packaging import version
-import pandas as pd
-import subprocess
-import sys
-import time
 def run_sctransform(data, clip_range=None, verbose=True, debug_path=None, plot_model_pars=False, **kwargs):
     """
     this function is cpy fromm SSAM  https://github.com/HiDiHlabs/ssam
@@ -175,4 +178,24 @@ def run_sctransform(data, clip_range=None, verbose=True, debug_path=None, plot_m
         return o, p
 
 
+def select_genes_for_sct(vec = None,
+                 genes = None,
+                 min_expr = 0.01,
+                 min_cell = 5):
+    """
+    Select the gene where it is possible to apply sctransform
+    default value from original vst :https://github.com/satijalab/sctransform/blob/master/R/vst.R
+    :param vec:
+    :param analysis: need only if vec is None
+    :param genes:
+    :param min_expr: default 0.01
+    :param min_cell: default 5
+    :return:
+    """
+    if type(vec) != type(np.array([])):
+        vec = vec.toarray() #sparse object for ex
+    bool_index  = np.sum(vec > min_expr, axis=0) >= min_cell
+    if bool_index.ndim == 2:
+        bool_index = bool_index[0]
+    return bool_index, np.array(genes)[bool_index]
 

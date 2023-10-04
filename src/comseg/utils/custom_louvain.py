@@ -18,7 +18,11 @@ import random
 import statistics
 import numpy as np
 
+
+
 __all__ = ["louvain_communities", "louvain_partitions"]
+
+
 
 
 @py_random_state("seed")
@@ -227,8 +231,8 @@ def louvain_partitions(
         confidence_level = confidence_level,
         prior_key="prior_index", ## harcoded prior key name from _gen_graph
     )
-    print(improvement)
-    print(len(partition))
+    #print(improvement)
+    #print(len(partition))
     improvement = True
     while improvement:
         new_mod = modularity(
@@ -252,7 +256,7 @@ def louvain_partitions(
             confidence_level=confidence_level,
             prior_key="prior_index", ## harcoded prior key name from _gen_graph
         )
-        print(len(partition))
+        #print(len(partition))
 
 def compute_prior_factor(source, ind_node, confidence_level = 0.99):
 
@@ -348,12 +352,13 @@ def _one_level(graph,
     improvement = False
     list_move = []
     while nb_moves > 0:
-        print(nb_moves)
-        if len(list_move) > 2 and list_move[-1] >= list_move[-2] and list_move[-2] >= list_move[-3]:
-            print()
-            print("problem of convergence to check in my method")
-            print()
-            break
+        #print(nb_moves)
+        #if len(list_move) > 2 and list_move[-1] >= list_move[-2] and list_move[-2] >= list_move[-3]:
+
+            #print()
+            #print("problem of convergence to check in my method")
+            #print()
+            #break
         nb_moves = 0
         for u in rand_nodes:
 

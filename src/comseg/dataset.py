@@ -22,7 +22,7 @@ sys.path.insert(1, os.getcwd() + "/code/")
 from pathlib import Path
 from sklearn.neighbors import radius_neighbors_graph
 #from processing_seg import full_df
-
+from tqdm import tqdm
 
 ### dataset class
 
@@ -37,13 +37,37 @@ from sklearn.neighbors import radius_neighbors_graph
 
 
 class ComSegDataset():
+    """
+    this class is in charge of :
+
+    1) loading the CSV input
+    2)  computation of the co-expression matrix at the dataset scale
+    3)  add prior knowledge if available
+
+    The dataset class can be used like a dictionary of where the keys are the csv file names and the values are the csv
+
+    """
 
     def __init__(self,
-                 selected_genes,
         path_dataset_folder = None,
         path_to_mask_prior = None,
         mask_file_extension = ".tiff",
-                 dico_scale={"x": 0.103, 'y': 0.103, "z": 0.3}):
+        dict_scale={"x": 0.103, 'y': 0.103, "z": 0.3}
+                 ):
+        """
+
+        :param path_dataset_folder: path to the folder containing the csv files
+        :type path_dataset_folder: str
+        :param path_to_mask_prior: path to the folder containing the mask priors. they must have the same name as the corresponding csv files
+        :type path_to_mask_prior:  str
+        :param mask_file_extension: file extension of the mask priors
+        :default mask_file_extension: ".tiff"
+        :param dict_scale: dictionary containing the pixel/voxel size of the images in µm default is {"x": 0.103, 'y': 0.103, "z": 0.3}
+        :type dict_scale: dict
+        """
+
+
+
         self.path_dataset_folder = Path(path_dataset_folder)
         self.path_to_mask_prior = Path(path_to_mask_prior)
         self.mask_file_extension = mask_file_extension
@@ -51,13 +75,17 @@ class ComSegDataset():
         ## initilatise dicotnary image name : path to image
 
         self.path_image_dict = {}
-
-        for image_path_df in self.path_dataset_folder.glob('*.csv'):
+        unique_gene = []
+        for image_path_df in self.path_dataset_folder.glob(f'*.csv'):
             print(f"add {image_path_df.stem}")
             self.path_image_dict[image_path_df.stem] = image_path_df
+            unique_gene += list(pd.read_csv(self.path_image_dict[image_path_df.stem]).gene.unique())
+        if len(self.path_image_dict) == 0:
+            raise ValueError("no csv file found in the dataset folder")
         self.list_index = list(self.path_image_dict.keys())
-        self.selected_genes = selected_genes
-        self.dico_scale = dico_scale
+        self.selected_genes = np.unique(unique_gene)
+
+        self.dict_scale = dict_scale
 
     def __getitem__(self, key):
         if isinstance(key, int):
@@ -79,9 +107,17 @@ class ComSegDataset():
     def add_prior_from_mask(self,
                             prior_keys_name = 'in_nucleus',
                             overwrite = False):
+
         """
-        add the prior column to the csv file and save it
+        this function add prior knowledge to the dataset. It adds a column in the csv files indicating prior label of each spot.
+        It takes the positon of each spots and add the corresponding value of the mask prior at this position.
+
+        :param prior_keys_name: name of the column to add in the csv files containing the prior label of each spot
+        :type str
+        :param overwrite: if True, overwrite the prior_keys_name column if it already exists
+        :type bool
         :return:
+        None
         """
         for image_path_df in self.path_dataset_folder.glob('*.csv'):
             print(f"add prior to {image_path_df.stem}")
@@ -89,13 +125,12 @@ class ComSegDataset():
 
             assert (self.path_to_mask_prior / (image_path_df.stem + self.mask_file_extension)  ).exists(), f"no mask prior found for {image_path_df.stem}"
 
-            if 'tif' in self.mask_file_extension :
+            if 'tif' in self.mask_file_extension[-4:] :
                 mask = tifffile.imread(self.path_to_mask_prior / (image_path_df.stem + self.mask_file_extension) )
-
-            elif 'npy' in self.mask_file_extension :
+            elif 'npy' in self.mask_file_extension[-4:]:
                 mask = np.load(self.path_to_mask_prior / (image_path_df.stem + self.mask_file_extension) )
             else:
-                raise ValueError("mask file extension not supported")
+                raise ValueError("mask file extension not supported please use image_name.npy or image_name.tif(f)")
             x_list = list(df_spots.x)
             y_list = list(df_spots.y)
             z_list = list(df_spots.z)
@@ -108,6 +143,7 @@ class ComSegDataset():
                 raise Exception(f"prior_keys_name {prior_keys_name} already in df_spots and overwrite is False")
             df_spots[prior_keys_name] = prior_list
             df_spots.to_csv(image_path_df,  index=False)
+            print(f"prior added to {image_path_df.stem} and save in csv file")
 
 
 
@@ -117,28 +153,23 @@ class ComSegDataset():
                                       df_spots_label,
                                       n_neighbors=5,
                                       radius=5,
-                                      mode="nearest_nn_radius",
-                                      directed=True):
+                                      mode="dist_weighted",
+                                      ):
 
 
         """
-        compute the in situ count matrix indexed by selected_genes using the directed graph
-        take either as input dico_simulation (internal) or df_spots_label (more general)
-        Args:
-            dico_simulation ():
-            df_spots_label (dataframe): with the columm 'x', 'y', 'z', 'gene',
-            selected_genes ():
-            scale ():
-            scaling_factor ():
-            n_neighbors ():
-            radius ():
-            mode ():
-            directed ():
-        Returns:
+        compute the co-expression score matrix for the RNA spatial distribution
+
+        :param df_spots_label:  dataframe with the columns x,y,z,gene. they coordinate be rescaled in µm by dict_scale attribute of the dataset object
+        :type df_spots_label: pd.DataFrame
+        :param n_neighbors: maximum number of neighbors default is 40
+        :type n_neighbors: int
+        :param radius: maximum radius of neighbors should be set proportionnaly to expected cell size
+        :return:
+        count_matrix of shape (n_genes, N_rna) where n_genes is the number of unique genes in df_spots_label
+        each row is an 'RNA expression vector' summarizing local expression neighborhood of the molecule
         """
 
-        # todo add a double condition
-        assert mode in ["nearest_nn", "radius", "nearest_nn_radius", "dist_weighted"]
         gene_index_dico = {}
         for gene_id in range(len(self.selected_genes)):
             gene_index_dico[self.selected_genes[gene_id]] = gene_id #todo gene_index_dico to add in self
@@ -148,17 +179,15 @@ class ComSegDataset():
         except Exception as e:
             print(e)
         if "z" in df_spots_label.columns:
-            list_coordo_order_no_scaling = np.array([df_spots_label.x, df_spots_label.y, df_spots_label.z]).T
+            list_coordo_order_no_scaling = np.array([df_spots_label.z, df_spots_label.y, df_spots_label.x]).T
             list_coordo_order = list_coordo_order_no_scaling * np.array(
-                [self.dico_scale['x'], self.dico_scale['y'], self.dico_scale["z"]])
-
+                [self.dict_scale['z'], self.dict_scale['y'], self.dict_scale["x"]])
         else:
-            list_coordo_order_no_scaling = np.array([df_spots_label.x, df_spots_label.y]).T
-            list_coordo_order = list_coordo_order_no_scaling * np.array([self.dico_scale['x'], self.dico_scale['y']])
+            list_coordo_order_no_scaling = np.array([df_spots_label.y, df_spots_label.x]).T
+            list_coordo_order = list_coordo_order_no_scaling * np.array([self.dict_scale['y'], self.dict_scale['x']])
 
         dico_list_features = {}
         assert 'gene' in df_spots_label.columns
-        #df_spots_label =  df_spots_label[np.isin(df_spots_label.gene, self.selected_genes)]
         for feature in df_spots_label.columns:
             dico_list_features[feature] = list(df_spots_label[feature])
         list_features = list(dico_list_features.keys())
@@ -166,66 +195,46 @@ class ComSegDataset():
                                range(len(df_spots_label))]
         array_gene_indexed = np.array([dico_list_features['gene'][i] for i in range(len(df_spots_label))])
 
-        if mode == "nearest_nn":
-            nbrs = NearestNeighbors(n_neighbors=n_neighbors, algorithm='ball_tree').fit(list_coordo_order)
-            ad = nbrs.kneighbors_graph(list_coordo_order)  ## can be optimize here
 
-        elif mode == "radius":
-            ad = radius_neighbors_graph(list_coordo_order, radius, mode='connectivity', include_self=True)
-        elif mode == "nearest_nn_radius" or mode == "dist_weighted":
-            nbrs = NearestNeighbors(n_neighbors=n_neighbors, algorithm='ball_tree').fit(list_coordo_order)
-            ad = nbrs.kneighbors_graph(list_coordo_order)  ## can be optimize here
-            distance = nbrs.kneighbors_graph(list_coordo_order, mode='distance')
-            ad[distance > radius] = 0
-            ad.eliminate_zeros()
-        else:
-            raise Exception(f" {mode} Not implemented")
+        nbrs = NearestNeighbors(n_neighbors=n_neighbors, algorithm='ball_tree').fit(list_coordo_order)
+        ad = nbrs.kneighbors_graph(list_coordo_order)  ## can be optimize here
+        distance = nbrs.kneighbors_graph(list_coordo_order, mode='distance')
+        ad[distance > radius] = 0
+        ad.eliminate_zeros()
+
         rows, cols, BOL = sp.find(ad == 1)
         edges = list(zip(rows.tolist(), cols.tolist()))
 
-        if directed:
-            G = nx.DiGraph()  # oriented graph
-            G.add_nodes_from(list_features_order)
-            if mode == "dist_weighted":
-                weighted_edges = [(e[0], e[1], distance[e[0], e[1]]) for e in edges]
-                G.add_weighted_edges_from(weighted_edges)
-            else:
-                G.add_edges_from(edges)
+        G = nx.DiGraph()  # oriented graph
+        G.add_nodes_from(list_features_order)
+        weighted_edges = [(e[0], e[1], distance[e[0], e[1]]) for e in edges]
+        G.add_weighted_edges_from(weighted_edges)
 
-            list_expression_vec = []
-            for node in list(G.nodes()):
-                vectors_gene = list(array_gene_indexed[list(G.successors(node))])
-                if mode == "dist_weighted":
-                    vector_distance = np.array([G[node][suc]['weight'] for suc in G.successors(node)])
-                # vector_distance
-                expression_vector = np.zeros(len(self.selected_genes))
-                for str_gene_index in range(len(vectors_gene)):
-                    str_gene = vectors_gene[str_gene_index]
-                    if mode == "dist_weighted":
-                        expression_vector[gene_index_dico[str_gene]] += 1 * vector_distance[str_gene_index]
-                    else:
-                        expression_vector[gene_index_dico[str_gene]] += 1
-                # print(np.sum(expression_vector))
-                list_expression_vec.append(expression_vector)
-        else:
-            raise Exception('not implemented')
-            # G = nx.Graph()
+        list_expression_vec = []
+        for node in list(G.nodes()):
+            vectors_gene = list(array_gene_indexed[list(G.successors(node))])
+            vector_distance = np.array([G[node][suc]['weight'] for suc in G.successors(node)])
+            # vector_distance
+            expression_vector = np.zeros(len(self.selected_genes))
+            for str_gene_index in range(len(vectors_gene)):
+                str_gene = vectors_gene[str_gene_index]
+                expression_vector[gene_index_dico[str_gene]] += 1 * vector_distance[str_gene_index]
+            list_expression_vec.append(expression_vector)
         count_matrix = np.array(list_expression_vec)
         return count_matrix
 
-    def get_dico_proba_edge_in_situ(self, count_matrix,
+    def get_dict_proba_edge_in_situ(self, count_matrix,
                                     distance="pearson",
-                                    negative_k=1):
+                                    ):
         """
-        compute
-        dico_proba_edge { gene1: {gene2 : pearson correlation }
-        Parameters
-        ----------
-        count_matrix :
-        selected_genes :
-        Returns
-        -------
-        dico_proba_edge { gene1: {gene2 : correlation }
+        compute the co-expression correlation matrix from the count_matrix
+
+        :param count_matrix: cell by gene matrix
+        :type count_matrix: np.array
+        :param distance:  choose in ["pearson", "spearman"] default is pearson
+        :type distance: str
+        :return:
+        a dictionary of dictionary corelation between genes dict[gene_source][gene_target] = correlation
         """
         import math
         assert distance in ["spearman", "pearson"]
@@ -248,18 +257,13 @@ class ComSegDataset():
                     raise Exception(f'distance {distance} not implemented')
                 if math.isnan(corr):
                     corr = -1
-                if corr < 0:
-                    corr = corr * negative_k
-
                 dico_proba_edge[self.selected_genes[gene_source]][self.selected_genes[gene_target]] = corr
                 dico_proba_edge[self.selected_genes[gene_target]][self.selected_genes[gene_source]] = corr
         return dico_proba_edge
 
     def compute_edge_weight(
             self,
-            dico_df_spots_label=None,
             images_subset = None,
-            mode="nearest_nn_radius",
             n_neighbors=25,
             radius=1,  # in micormeter
             distance="pearson",
@@ -270,30 +274,29 @@ class ComSegDataset():
         #print("adapt to when I prune")
 
         """
-        compute the count matrix of each images with count_matrix_in_situ_from_knn()
-         then use them all to compute the edge weigth dico with get_dico_proba_edge_in_situ()
-           dico_proba_edge { gene1: {gene2 : correlation }
-        Parameters
-        ----------
-        path_simu_only :
-        selected_genes :
-        max_number_image :
-        mode :
-        n_neighbors :
-        radius :
-        scale :
-        Returns
-        -------
-        dico_proba_edge { gene1: {gene2 : correlation }
+        compute the gene co-expression correlation at the dataset scale
+
+        :param dico_df_spots_label:
+        :param images_subset:
+        :param mode:
+        :param n_neighbors:
+        :param radius:
+        :param distance:
+        :param per_images:
+        :param sampling:
+        :param sampling_size:
+        :return:
+        dico_proba_edge : a dictionary of dictionary corelation between genes dict[gene_source][gene_target] = correlation
+        count_matrix : the count matrix used to compute the correlation
+        :rtype dico_proba_edge: dict
+        :rtype count_matrix: np.array
         """
 
         dico_proba_edge = {}
-        assert mode in ["nearest_nn", "radius", "nearest_nn_radius", 'dist_weighted']
-        assert dico_df_spots_label is None
 
         list_of_count_matrix = []
         assert self.__len__() > 0, "no images in the dataset"
-        for image_name in self.path_image_dict.keys():
+        for image_name in tqdm(list(self.path_image_dict.keys())):
 
             if images_subset is not None: ## select only intersting images if needed
                 if image_name not in images_subset:
@@ -305,34 +308,22 @@ class ComSegDataset():
             print("image name : ", image_name)
             count_matrix = self.count_matrix_in_situ_from_knn(df_spots_label=df_spots_label,  # df_spots_label,
                                                          n_neighbors=n_neighbors,
-                                                         radius=radius,
-                                                         mode=mode,
-                                                         directed=True,)
+                                                         radius=radius)
             list_of_count_matrix.append(count_matrix)
         if sampling:
             print("count_matrix.shape", count_matrix.shape)
-
             print(f"sampling {sampling} vectors")
             count_matrix = np.concatenate(list_of_count_matrix, axis=0)
             count_matrix = count_matrix[np.random.choice(count_matrix.shape[0], sampling_size, replace=False), :]
             print("count_matrix.shape", count_matrix.shape)
 
-        if not per_images:
-            dico_proba_edge = self.get_dico_proba_edge_in_situ(count_matrix=count_matrix,
+        dict_co_expression = self.get_dict_proba_edge_in_situ(count_matrix=count_matrix,
                                                           distance=distance,
                                                           )
-
-        self.dict_co_expression = dico_proba_edge
-
+        self.dict_co_expression = dict_co_expression
         return dico_proba_edge, count_matrix
 
 
-
-    def plot_dict_co_expression(self,
-                                selected_genes = None):
-
-        if selected_genes is None:
-            selected_genes = self.selected_genes
 
 
 
@@ -367,7 +358,7 @@ if __name__ == "__main__":
                     )
     dataset.add_prior_from_mask()
 
-    dataset.compute_in_situ_edge(#dico_scale={"x": 0.103, 'y': 0.103, "z": 0.3},  # in micrometer
+    dataset.compute_in_situ_edge(#dict_scale={"x": 0.103, 'y': 0.103, "z": 0.3},  # in micrometer
             selected_genes=list_marker_ns,
             images_subset = None,
             mode="nearest_nn_radius",

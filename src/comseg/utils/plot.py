@@ -56,5 +56,4 @@ def plot_result(nuclei,
     plt.title(title)
     ax.imshow(mip_nuclei > 0, cmap='gist_gray', alpha=0.8)
     ax.imshow(mip_nuclei, cmap='gist_gray', alpha=0.8)
-    plt.show()
     return fig, ax

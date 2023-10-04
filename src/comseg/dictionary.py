@@ -4,7 +4,7 @@
 
 
 """
-class set store the graph and anndata of the comseg(s) object
+class set store the graph and anndata of the comseg.rst(s) object
 preprocess it (like concatenate anndata) to perform classification
 then apply a community classification (in situ clustering class)
 """
@@ -15,89 +15,176 @@ then apply a community classification (in situ clustering class)
 import os
 import sys
 
+sys.path.insert(0, os.path.abspath('.'))
+sys.path.insert(0, os.path.abspath('..'))
 from tqdm import tqdm
 
 import anndata as ad
-from . import clustering
-from . import model
-sys.path.insert(1, os.getcwd() + "/code/")
-
+import clustering
+import model
+import clustering
 #from unused_files.similarity_m import get_simialrity_matrix
-#from utils.data_processing import sctransform_from_parameters
+#from utils import data_processing as data_processing
 
 
 
 from pathlib import Path
 import numpy as np
 
-__all__ = ["ComSeg"]
+__all__ = ["ComSegDict"]
 
 
 
 
 class ComSegDict():
+    """
+    As a dataset is often compose of many separated images. It is requiere to create many comseg graph of RNA.
+    beside the in-situ clustering to identify the transcriptomic profile is more informative at the data scale.
+    To ease the analysis entire dataset we implement ComSegDict. It is a class that store many ComSeg object.
+    and allow to perform analysis at the dataset scale.
 
-    #todo optimize the memory complexity
-    # so far I store many time the same anndata
+    This class is implemented as a dictionary of ComSeg graph object
+    """
 
-    def __init__(self):
+    def __init__(self, dataset=None,
+                 mean_cell_diameter= None,
+                 clustering_method="louvain_with_prior",
+                 prior_keys="in_nucleus",
+                 seed=None,
+                 super_node_prior_keys="in_nucleus",
+                 confidence_level=1,
+                 ):
+
+        """
+        :param dataset:
+        :type dataset: ComSegDataset
+        :param mean_cell_diameter: the expected mean cell diameter in µm default is 15µm
+        :type mean_cell_diameter: float
+        :param clustering_method: choose in ["with_prior",  "louvain"], "with_prior" is our graph partioning/ community
+                detection method taking into account prior knowledge
+        :type clustering_method: str
+        :param prior_keys: key of the prior cell assignment in the node attribute dictionary and in the input CSV file
+        :type prior_keys: str
+        :param seed: (optional) seed for the grpah partioning initialization
+        :type seed: int
+        :param super_node_prior_keys: key of the prior cell assignment in the node attribute
+             and in the input CSV file that is certain. node labeled with the same supernode prior key will be merged.
+             prior_keys and super_node_prior_keys can be the different if two landmarks mask prior are available.
+             exemple: super_node_prior_keys = "nucleus_landmak", prior_keys = "uncertain_cell_landmark"
+        :type super_node_prior_keys: str
+        :param confidence_level:, confidence level for the prior knowledge (prior_keys) in the range [0,1]. 1 means that the prior knowledge is certain.
+        :type confidence_level: float
+        """
+
+        self.dataset = dataset
+        self.mean_cell_diameter = mean_cell_diameter
+        self.clustering_method = clustering_method
+        self.prior_keys = prior_keys
+        self.seed = seed
+        self.super_node_prior_keys = super_node_prior_keys
+        self.confidence_level = confidence_level
+        self.dict_img_name = {}
+
+        ###
+        ##
+        ##
         return
     ## create directed grap
     def __setitem__(self, key, item):
-        self.__dict__[key] = item
+        self.dict_img_name[key] = item
 
     def __getitem__(self, key):
-        return self.__dict__[key]
+        return self.dict_img_name[key]
 
     def __repr__(self):
-        return repr(self.__dict__)
+        return repr(self.dict_img_name )
 
     def __len__(self):
-        return len(self.__dict__)
+        return len(self.dict_img_name )
 
     def __delitem__(self, key):
-        del self.__dict__[key]
+        del self.dict_img_name [key]
 
     def clear(self):
-        return self.__dict__.clear()
+        return self.dict_img_name.clear()
 
     def copy(self):
-        return self.__dict__.copy()
+        return self.dict_img_name.copy()
 
     def has_key(self, k):
-        return k in self.__dict__
+        return k in self.dict_img_name
 
     def update(self, *args, **kwargs):
-        return self.__dict__.update(*args, **kwargs)
+        return self.dict_img_name.update(*args, **kwargs)
 
     def keys(self):
-        return self.__dict__.keys()
+        return self.dict_img_name.keys()
 
     def values(self):
-        return self.__dict__.values()
+        return self.dict_img_name.values()
 
     def items(self):
-        return self.__dict__.items()
+        return self.dict_img_name.items()
 
     def pop(self, *args):
-        return self.__dict__.pop(*args)
+        return self.dict_img_name.pop(*args)
 
     def __cmp__(self, dict_):
-        return self.__cmp__(self.__dict__, dict_)
+        return self.__cmp__(self.dict_img_name , dict_)
 
     def __contains__(self, item):
-        return item in self.__dict__
+        return item in self.dict_img_name
 
     def __iter__(self):
-        return iter(self.__dict__)
+        return iter(self.dict_img_name)
 
 
     def concatenate_anndata(self):
-         self.global_anndata = ad.concat([self[img].community_anndata for img in self
-                                          if str(type(self[img])) == "<class 'comseg.model.ComSeg'>"])
-         self.global_anndata.obs["img_name"] =  np.concatenate([[img] * len(self[img].community_anndata) for img in self
-                                                 if  str(type(self[img])) == "<class 'comseg.model.ComSeg'>"])
-         return self.global_anndata
+        """
+        concatenate all the anndata of community expression vector from all
+        the ComSeg graphs
+
+        :return: anndata
+        :rtype  AnnData
+        """
+        self.global_anndata = ad.concat([self[img].community_anndata for img in self
+                                      if str(type(self[img])) == "<class 'comseg.rst.model.ComSeg'>"])
+        self.global_anndata.obs["img_name"] =  np.concatenate([[img] * len(self[img].community_anndata) for img in self
+                                             if  str(type(self[img])) == "<class 'comseg.rst.model.ComSeg'>"])
+        return self.global_anndata
+
+
+    ### compute in-situ vector
+
+
+    def compute_community_vector(self,):
+        """
+        for all the images in the dataset, this function create a graph of RNAN
+        and compute the community vectors
+
+        :param self:
+        :return:
+        """
+        for img_name in tqdm(list(self.dataset)):
+            #### GRAPH CREATION
+            comseg_m = model.ComSeg(selected_genes=self.dataset.selected_genes,
+                                    df_spots_label=self.dataset[img_name],
+                                    dict_scale=self.dataset.dict_scale,
+                                    mean_cell_diameter=self.mean_cell_diameter,  # in micrometer
+                                    )
+            comseg_m.create_graph(dict_co_expression=self.dataset.dict_co_expression,
+                                  )
+
+            #### COMMÛTE COMMUNITY OF RNA
+
+            comseg_m.community_vector(
+                clustering_method=self.clustering_method,
+                prior_keys=self.prior_keys,
+                seed=self.seed,
+                super_node_prior_keys=self.super_node_prior_keys,
+                confidence_level=self.confidence_level,
+            )
+            self[img_name] = comseg_m
 
 
 
@@ -119,22 +206,41 @@ class ComSegDict():
                                   min_merge_correlation=0.8,
                                   merge_cluster = True,
                                   ):
+
+
         """
-        #todo clean the name leiden vs leiden_merged
-        # or add the current cleuter name to use in the self
-        :param size_commu_min:
-        :param norm_vector:
-        :param n_pcs:
-        :param n_comps:
-        :param clustering_method:
-        :param n_neighbors:
-        :param resolution:
-        :param n_clusters_kmeans:
-        :param palette:
-        :param nb_min_cluster:
-        :param min_merge_correlation:
+        Cluster all toguether  the RNA partition/community expression vector for all the images in the dataset and
+        identify the single cell transcriptomic cluster present in the dataset
+
+
+        #todo clean the name leiden vs leiden_merged aka clustering_method
+
+        #todo or add the current cleuter name to use in the self so it is reuse in  add_cluster_id_to_graph
+
+        :param size_commu_min: minimum number of RNA in a community to be considered for the clustering
+        :rtype size_commu_min: int
+        :param norm_vector: if True, the expression vector will be normalized using the scTRANSFORM normalization parameters
+        :type norm_vector: bool
+        :param n_pcs: number of principal component to compute for the clustering; Lets 0 if no pca
+        :rtype n_pcs: int
+        :param n_comps: number of components to compute for the clustering; Lets 0 if no pca
+        :rtype n_comps: int
+        :param clustering_method: choose in ["leiden", "kmeans", "louvain"]
+        :type clustering_method: str
+        :param n_neighbors: number of neighbors similarity graph
+        :rtype n_neighbors: int
+        :param resolution: resolution parameter for the leiden/Louvain clustering
+        :rtype resolution: float
+        :param n_clusters_kmeans: number of cluster for the kmeans clustering
+        :rtype n_clusters_kmeans: int
+        :param palette: color palette for the cluster list of (HEX) color
+        :type palette: list[str]
+        :param min_merge_correlation: minimum correlation to merge cluster
+        :type min_merge_correlation: float
         :return:
         """
+
+
         self.clustering_method = clustering_method
         try:
             self.global_anndata
@@ -144,7 +250,6 @@ class ComSegDict():
                                         selected_genes=self.global_anndata.var_names)
         ### APPLY NORMALIZATION
         self.in_situ_clustering.compute_normalization_parameters()
-
         self.global_anndata = self.in_situ_clustering.cluster_rna_community(
                                                           size_commu_min=size_commu_min,
                                                           norm_vector=norm_vector,
@@ -157,7 +262,7 @@ class ComSegDict():
                                                           n_clusters_kmeans=n_clusters_kmeans,
                                                           palette=palette
                                                         )
-        self.in_situ_clustering.cluster_centroid(
+        self.in_situ_clustering.get_cluster_centroid(
             cluster_column_name=clustering_method,
             agregation_mode="mean")
 
@@ -183,7 +288,7 @@ class ComSegDict():
 
         ## add cluster to community of each images
         for img in self:
-            if str(type(self[img])) != "<class 'comseg.model.ComSeg'>":
+            if str(type(self[img])) != "<class 'comseg.rst.model.ComSeg'>":
                 continue
             ## get the cluster list and the community index
             cluster_id_list = list(self.global_anndata[self.global_anndata.obs.img_name == img].obs[self.clustering_method])
@@ -191,7 +296,7 @@ class ComSegDict():
             assert community_index_list == list(self[img].community_anndata.obs['index_commu'])
             self[img].community_anndata.obs[self.clustering_method] = cluster_id_list
             ## self[img].community_anndata.obs["cluster"] = self.global_anndata.obs["cluster"].loc[self[img].community_anndata.obs.index]
-            ## loop on comseg model images
+            ## loop on comseg.rst model images
         return self.global_anndata
 
 
@@ -205,10 +310,15 @@ class ComSegDict():
                                 clustering_method = "leiden_merged"):
 
         """
+        Add transcriptional cluster id to each RNA molecule in the graph
+
         :param self:
+        :param clustering_method: clustering method used to get the community (kmeans, leiden_merged, louvain)
+        :type clustering_method: str
         :return:
         """
-        list_img = [img for img in self if str(type(self[img])) == "<class 'comseg.model.ComSeg'>"]
+        #todo use the method of the comseg instance
+        list_img = [img for img in self if str(type(self[img])) == "<class 'comseg.rst.model.ComSeg'>"]
         for img_name in list_img:
             list_index_commu = list(self[img_name].community_anndata.obs['index_commu'])
             list_cluster_id = list(self[img_name].community_anndata.obs[clustering_method])
@@ -239,21 +349,30 @@ class ComSegDict():
                       ):
 
         """
-        :param self:
-        :param dict_cell_centroid:
-        :param n_neighbors:
-        :param dict_in_pixel:
-        :param max_dist_centroid:
-        :param key_pred:
-        :param distance:
-        :param convex_hull_centroid:
-        :param prior_keys:
+        Classify cell centroids based on their  centroid neighbors RNA
+        label from ``add_cluster_id_to_graph()``
+
+
+        :param path_dict_cell_centroid: path to the folder containing the centroid dictionary {cell : {z:,y:,x:}}
+                        with each centroid dictionary in a file named as the image name and store in a npy format
+        :type path_dict_cell_centroid: str
+        :param n_neighbors: number of neighbors to consider for the classification of the centroid (default 15)
+        :type n_neighbors: int
+        :param dict_in_pixel: if True the centroid are in pixel and rescal if False the centroid are in um (default True)
+        :type dict_in_pixel: bool
+        :param max_dist_centroid: maximum distance to consider for the centroid (default None)
+        :type max_dist_centroid: int
+        :param key_pred: key of the node attribute containing the cluster id (default "leiden_merged")
+        :type key_pred: str
+        :param convex_hull_centroid: check that cell centroid is in the convex hull of its RNA neighbors (default True). If not the cell centroid is not classify to avoid artefact misclassification
+        :type convex_hull_centroid: bool
+        :param file_extension: file extension of the centroid dictionary
         :return:
         """
 
 
         for img_name in tqdm(self):
-            if str(type(self[img_name])) != "<class 'comseg.model.ComSeg'>":
+            if str(type(self[img_name])) != "<class 'comseg.rst.model.ComSeg'>":
                 continue
             dict_cell_centroid = np.load(Path(path_dict_cell_centroid) / (img_name + file_extension), allow_pickle=True).item()
 
@@ -267,7 +386,7 @@ class ComSegDict():
                                              )
 
 
-    #### Aplly diskjtra
+    #### Apply diskjtra
 
 
     def associate_rna2landmark(self,
@@ -276,16 +395,21 @@ class ComSegDict():
         distance='distance',
         max_distance=100):
         """
+        Associate RNA to landmark based on the both transcriptomic landscape and the
+        distance between the RNA and the centroid of the landmark
 
-        :param key_pred:
+
+        :param key_pred: key of the node attribute containing the cluster id (default "leiden_merged")
+        :type key_pred: str
         :param super_node_prior_key:
-        :param distance:
-        :param max_distance: distanc in um
+        :type super_node_prior_key: str
+        :param max_distance: maximum distance between a cell centroid and an RNA to be associated (default 100)
+        :type max_distance: float
         :return:
         """
 
         for img_name in tqdm(self):
-            if str(type(self[img_name])) != "<class 'comseg.model.ComSeg'>":
+            if str(type(self[img_name])) != "<class 'comseg.rst.model.ComSeg'>":
                 continue
 
             self[img_name].associate_rna2landmark(
@@ -306,17 +430,35 @@ class ComSegDict():
     def anndata_from_comseg_result(self,
                                    key_cell_pred='cell_index_pred',
                                    ):
+
+        """
+        Return an anndata with the estimated expression vector of each cell in the dataset plus the spots position.
+        :param self:
+        :param key_cell_pred:
+        :return:
+        """
         list_image_name = []
         anndata_list = []
+        dict_df_spots = {}
+
         for img_name in tqdm(self):
-            if str(type(self[img_name])) != "<class 'comseg.model.ComSeg'>":
+            if str(type(self[img_name])) != "<class 'comseg.rst.model.ComSeg'>":
                 continue
             anndata = self[img_name].get_anndata_from_result(
                 key_cell_pred=key_cell_pred)
 
             anndata_list.append(anndata)
             list_image_name += [img_name] * len(anndata)
+            dict_df_spots[img_name] = anndata.uns["df_spots"]
+
+            assert np.array_equal(anndata.var_names, self.dataset.selected_genes), "The anndata var names are not the same as the dataset selected genes"
+
+
 
         self.final_anndata = ad.concat(anndata_list)
         self.final_anndata.obs["image_name"] = list_image_name
+        self.final_anndata.var["features"] = self.dataset.selected_genes
+        self.final_anndata.var_names = self.dataset.selected_genes
+        self.final_anndata.uns["df_spots"] = dict_df_spots
+        return self.final_anndata
 
