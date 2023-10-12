@@ -97,7 +97,7 @@ class ComSegDict():
         return self.dict_img_name[key]
 
     def __repr__(self):
-        return repr(self.dict_img_name )
+        return repr(f'ComSegDict {self.dict_img_name}')
 
     def __len__(self):
         return len(self.dict_img_name )
@@ -172,8 +172,9 @@ class ComSegDict():
                                          df_spots_label=self.dataset[img_name],
                                          dict_scale=self.dataset.dict_scale,
                                          mean_cell_diameter=self.mean_cell_diameter,  # in micrometer
+                                         dict_co_expression=self.dataset.dict_co_expression,
                                          )
-            comseg_m.create_graph(dict_co_expression=self.dataset.dict_co_expression,
+            comseg_m.create_graph(
                                   )
 
             #### COMMÛTE COMMUNITY OF RNA
