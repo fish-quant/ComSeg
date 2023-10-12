@@ -10,6 +10,9 @@ apply dikstra to compute the distance between the centroid and the other nodes
 return a count matrix of the image
 """
 
+
+
+
 #%%
 
 import numpy as np
@@ -351,7 +354,8 @@ class ComSegGraph():
         import scipy.spatial as spatial
         def normal_dist(x, mean, sd, norm_gauss=False):  # copy from knn_to_count
             if norm_gauss:
-                prob_density = (1 / (sd * np.sqrt(2 * np.pi))) * np.exp(-0.5 * ((x - mean) / sd) ** 2)
+                #prob_density = (1 / (sd * np.sqrt(2 * np.pi))) * np.exp(-0.5 * ((x - mean) / sd) ** 2)
+                raise Exception("not implemented")
             else:
                 prob_density = np.exp(-0.5 * ((x - mean) / sd) ** 2)
             return prob_density

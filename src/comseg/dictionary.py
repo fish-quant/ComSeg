@@ -88,7 +88,7 @@ class ComSegDict():
         ###
         ##
         ##
-        return
+        #return
     ## create directed grap
     def __setitem__(self, key, item):
         self.dict_img_name[key] = item
