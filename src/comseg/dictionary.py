@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.abspath('..'))
 from tqdm import tqdm
 
 import anndata as ad
-import model
+from . import model
 #import clustering
 from . import clustering
 #from unused_files.similarity_m import get_simialrity_matrix
