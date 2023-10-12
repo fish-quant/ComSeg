@@ -346,7 +346,7 @@ class ComSegGraph():
                                #max_dist = 5,
                                 key_word = "kernel_vector",
                                remove_self_node = True,
-                               norm_gauss = True):
+                               norm_gauss = False):
         import numpy as np
         import scipy.spatial as spatial
         def normal_dist(x, mean, sd, norm_gauss=False):  # copy from knn_to_count
