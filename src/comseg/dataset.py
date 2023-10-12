@@ -1,11 +1,4 @@
 
-
-## todod
-## clean count_matrix_in_situ_from_knn and recheck
-## clean count_matrix_in_situ_from_knn
-## how to handle the arg "selected_gene"
-
-
 import os
 import sys
 import networkx as nx
@@ -27,13 +20,7 @@ from tqdm import tqdm
 ### dataset class
 
 
-## take as input the path to the dataset folder of dataframes
 
-## comput if possible the prior and save save it in the dataset folder path to mask
-
-## compute the co-expression matrix
-
-### compute the norm parameter
 
 
 class ComSegDataset():
@@ -54,8 +41,8 @@ class ComSegDataset():
         mask_file_extension = ".tiff",
         dict_scale={"x": 0.103, 'y': 0.103, "z": 0.3}
                  ):
-        """
 
+        """
         :param path_dataset_folder: path to the folder containing the csv files
         :type path_dataset_folder: str
         :param path_to_mask_prior: path to the folder containing the mask priors. They must have the same name as the corresponding csv files
@@ -64,17 +51,11 @@ class ComSegDataset():
         :default mask_file_extension: ".tiff"
         :param dict_scale: dictionary containing the pixel/voxel size of the images in µm default is {"x": 0.103, 'y': 0.103, "z": 0.3}
         :type dict_scale: dict
-
         """
-
-
 
         self.path_dataset_folder = Path(path_dataset_folder)
         self.path_to_mask_prior = Path(path_to_mask_prior)
         self.mask_file_extension = mask_file_extension
-
-        ## initilatise dicotnary image name : path to image
-
         self.path_image_dict = {}
         unique_gene = []
         for image_path_df in self.path_dataset_folder.glob(f'*.csv'):
@@ -85,7 +66,6 @@ class ComSegDataset():
             raise ValueError("no csv file found in the dataset folder")
         self.list_index = list(self.path_image_dict.keys())
         self.selected_genes = np.unique(unique_gene)
-
         self.dict_scale = dict_scale
 
     def __getitem__(self, key):
@@ -112,7 +92,7 @@ class ComSegDataset():
         """
 
         This function add prior knowledge to the dataset. It adds a column in the csv files indicating prior label of each spot.
-        It takes the positon of each spot and add the corresponding value of the mask prior at this position.
+        It takes the positition of each spot and add the corresponding value of the mask prior at this position.
 
         :param prior_keys_name: name of the column to add in the csv files containing the prior label of each spot
         :type str
@@ -218,7 +198,7 @@ class ComSegDataset():
             expression_vector = np.zeros(len(self.selected_genes))
             for str_gene_index in range(len(vectors_gene)):
                 str_gene = vectors_gene[str_gene_index]
-                expression_vector[gene_index_dico[str_gene]] += 1 * vector_distance[str_gene_index]
+                expression_vector[gene_index_dico[str_gene]] += radius  - 1 *  vector_distance[str_gene_index]
             list_expression_vec.append(expression_vector)
         count_matrix = np.array(list_expression_vec)
         return count_matrix

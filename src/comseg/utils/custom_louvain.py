@@ -352,13 +352,6 @@ def _one_level(graph,
     improvement = False
     list_move = []
     while nb_moves > 0:
-        #print(nb_moves)
-        #if len(list_move) > 2 and list_move[-1] >= list_move[-2] and list_move[-2] >= list_move[-3]:
-
-            #print()
-            #print("problem of convergence to check in my method")
-            #print()
-            #break
         nb_moves = 0
         for u in rand_nodes:
 
@@ -379,14 +372,6 @@ def _one_level(graph,
             else:
                 degree = degrees[u]
                 Stot[best_com] -= degree ## we remove i from the community best comm so Stot[best_com] do not contain the edge of i
-                #remove_cost =(-weights2com[best_com] +
-                #              compute_prior_factor_scaled(
-                #                  label_commu = prior_label_node_commu[best_com],
-                #                  label_node = prior_label_node[u],
-                #                  max_weight2com = weights2com[best_com],
-                #                confidence_level = confidence_level)
-                #              / m
-                #              ) + resolution * ( Stot[best_com] * degree ) / (2 * m**2)
                 remove_cost =(-weights2com[best_com] / m
                               ) + resolution * ( Stot[best_com] * degree ) / (2 * m**2)
 
@@ -397,21 +382,15 @@ def _one_level(graph,
 
                 gain = (
                     remove_cost
-                    + (wt +         compute_prior_factor_scaled(
+                    + (wt + compute_prior_factor_scaled(
                           label_commu = prior_label_node_commu[nbr_com],
                           label_node = prior_label_node[u],
-                          max_weight2com = max_weight2com,
+                           max_weight2com = max_weight2com,
+                          #  max_weight2com = wt,
                         confidence_level = confidence_level)
-
-
                        ) / m
                     - resolution * (Stot[nbr_com] * degree) / (2 * m**2)
                 )
-                        #if compute_prior_factor(prior_label_node_commu[nbr_com],
-                                             #    prior_label_node[u], confidence_level=confidence_level) != 1:
-                        #    raise ValueError("prior factor should be 1")
-
-
                 if gain > best_mod:
                     best_mod = gain
                     best_com = nbr_com
@@ -456,7 +435,7 @@ def _one_level(graph,
 
 
 def _neighbor_weights(nbrs, node2com):
-    """Calculate weights between node and its neighbor communities.
+    """Calculate weights between nodes and its neighbor communities.
 
     Parameters
     ----------
@@ -489,9 +468,6 @@ def _gen_graph(graph,
                 prior_list += graph.nodes[node]["prior_list"] # in nucleus list should be call prior_list
             else:
                 prior_list.append(graph.nodes[node][prior_key])
-
-
-
         if len(set(prior_list) - set([0])) == 0:
             prior_index = 0
         else:

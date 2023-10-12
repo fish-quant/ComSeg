@@ -27,19 +27,13 @@ import pandas as pd
 
 
 
-sys.path.insert(1, os.getcwd() + "/code/")
-
-
-#from unused_files.similarity_m import get_simialrity_matrix
-#from utils.data_processing import sctransform_from_parameters
-
 import networkx.algorithms.community as nx_comm
 import numpy as np
 from sklearn.utils.extmath import weighted_mode
 from scipy.spatial import ConvexHull, Delaunay
+from .utils import custom_louvain
 
-
-__all__ = ["ComSeg"]
+__all__ = ["ComSegGraph"]
 
 
 def normal_dist(x , mean , sd):
@@ -47,15 +41,17 @@ def normal_dist(x , mean , sd):
     return prob_density
 
 
-class ComSeg():
+class ComSegGraph():
     """
+
+
     Class to the generate the graph of RNA spots from a CSV file/image
     this class is in charge of :
     - create the graph
-    - apply community detection / graph partioning
-    - add label the communities computed by the instance of the class InSituClustering
+    - apply community detection / graph partitioning
+    - add to the communities the label/cell type computed by the instance of the class InSituClustering
     - add the centroid of the cells in the graph
-    - associate RNA to cell
+    - associate RNAs to cell
     - compute the cell-by-gene matrix of the input sample
 
 
@@ -69,12 +65,16 @@ class ComSeg():
                 mean_cell_diameter=15,  # in micrometer
                 k_nearest_neighbors = 10,
                 edge_max_length = None,
-                eps_min_weight =  0.01,
+                eps_min_weight =  None,
 
 
                  ):
 
+
+
         """
+
+
         :param df_spots_label: dataframe of the spots with column x,y,z, gene and optionally the prior label column
         :type df_spots_label: pd.DataFrame
         :param selected_genes: list of genes to consider
@@ -102,7 +102,7 @@ class ComSeg():
         self.k_nearest_neighbors = k_nearest_neighbors
         if edge_max_length is None:
             self.edge_max_length = mean_cell_diameter / 4
-        self.eps_min_weight = eps_min_weight
+        self.eps_min_weight = 1 / k_nearest_neighbors
         self.resolution = 1
         self.selected_genes = selected_genes
         self.gene_index_dict = {}
@@ -120,9 +120,10 @@ class ComSeg():
         """
         create the graph of the RNA nodes, all the graph generation parameters are set in the __init__ function
 
-        :return a graph of the RNA spots
-        :rtype nx.Graph
+        :return: a graph of the RNA spots
+        :rtype: nx.Graph
         """
+
         try:
             self.df_spots_label = self.df_spots_label.reset_index()
         except Exception as e:
@@ -141,7 +142,7 @@ class ComSeg():
         for feature in self.df_spots_label.columns:
                 dico_list_features[feature] = list(self.df_spots_label[feature])
         list_features = list(dico_list_features.keys())
-        list_features_order = [(i, {feature: dico_list_features[feature][i] for feature in  list_features}) for i in range(len(self.df_spots_label))]
+        list_features_order = [(i, {feature: dico_list_features[feature][i] for feature in list_features}) for i in range(len(self.df_spots_label))]
         dico_features_order = {}
         for node in range(len(list_features_order)):
             dico_features_order[node] = list_features_order[node][1]
@@ -173,7 +174,7 @@ class ComSeg():
             G[edges[0]][edges[1]]["weight"] = weight
             G[edges[0]][edges[1]]["relative_weight"] = relative_weight
             G[edges[0]][edges[1]]["distance"] = distance_list[edges_index]
-            G[edges[0]][edges[1]]["gaussian"] =  normal_dist(distance_list[edges_index], mean=0, sd =1)
+            G[edges[0]][edges[1]]["gaussian"] = normal_dist(distance_list[edges_index], mean=0, sd =1)
 
         self.G = G
         self.list_features_order = np.array(list_features_order) ## for later used ?
@@ -186,7 +187,6 @@ class ComSeg():
 
     def community_vector(self,
                          clustering_method="with_prior",
-
                          prior_keys="in_nucleus",
                          seed=None,
                          super_node_prior_keys="in_nucleus",
@@ -194,10 +194,10 @@ class ComSeg():
                          # param for multigrpah leiden
                          ):
         """
-        Partion the graph into communities/set of RNA and compute and store the "community expression vector
-         in the ''community_anndata'' class attribute
+        Partition the graph into communities/sets of RNAs and computes and stores the "community expression vector"
+         in the ``community_anndata`` class attribute
 
-        :param clustering_method: choose in ["with_prior",  "louvain"], "with_prior" is our graph partioning/ community
+        :param clustering_method: choose in ["with_prior",  "louvain"], "with_prior" is our graph partitioning/community
                 detection method taking into account prior knowledge
         :type clustering_method: str
 
@@ -207,10 +207,10 @@ class ComSeg():
         :type seed: int
         :param super_node_prior_keys: key of the prior cell assignment in the node attribute
              and in the input CSV file that is certain. node labeled with the same supernode prior key will be merged.
-             prior_keys and super_node_prior_keys can be the different if two landmarks mask prior are available.
+             prior_keys and super_node_prior_keys can be the different if two landmark mask priors are available.
              exemple: super_node_prior_keys = "nucleus_landmak", prior_keys = "uncertain_cell_landmark"
         :type super_node_prior_keys: str
-        :param confidence_level:, confidence level for the prior knowledge (prior_keys) in the range [0,1]. 1 means that the prior knowledge is certain.
+        :param confidence_level: confidence level for the prior knowledge (prior_keys) in the range [0,1]. 1 means that the prior knowledge is certain.
         :type confidence_level: float
         :return: a graph with a new node attribute "community" with the community detection vector
         :rtype: nx.Graph
@@ -231,10 +231,8 @@ class ComSeg():
             if 0 in unique_super_node_prior:
                 assert unique_super_node_prior[0] == 0
                 unique_super_node_prior = unique_super_node_prior[1:]
-                list_nodes[array_super_node_prior == 0]
                 partition += [{u} for u in list_nodes[array_super_node_prior == 0]]
             for super_node in unique_super_node_prior:
-                list_nodes[array_super_node_prior == super_node]
                 partition += [set(list_nodes[array_super_node_prior == super_node])]
         else:
             partition = None
@@ -249,7 +247,6 @@ class ComSeg():
 
 
         if clustering_method == "with_prior":
-            from .utils import custom_louvain
             comm, final_graph = custom_louvain.louvain_communities(
                     G=self.G.to_undirected(reciprocal=False),
                     weight="weight",
@@ -319,6 +316,7 @@ class ComSeg():
                                 dict_cluster_id,
                                 clustering_method = "with_prior"):
         """
+
         add transcriptional cluster id to each RNA molecule in the graph
 
         :param dict_cluster_id: dict {index_commu : cluster_id}
@@ -437,7 +435,7 @@ class ComSeg():
                           convex_hull_centroid = True,
                           ):
         """
-        classify cell  based on their  centroid neighbors RNA label from ``add_cluster_id_to_graph()``
+        classify cells  based on their  neighbor RNA labels from ``add_cluster_id_to_graph()``
 
         :param dict_cell_centroid: dict of centroid coordinate  {cell : {z:,y:,x:}}
         :type dict_cell_centroid: dict
@@ -451,8 +449,8 @@ class ComSeg():
         :type key_pred: str
         :param convex_hull_centroid: check that cell centroid is in the convex hull of its RNA neighbors (default True). If not the cell centroid is not classify to avoid artefact misclassification
         :type convex_hull_centroid: bool
-        :return:
-        :rtype nx.Graph
+        :return: self.G
+        :rtype: nx.Graph
         """
 
         self.dict_cell_centroid = dict_cell_centroid
@@ -590,8 +588,9 @@ class ComSeg():
                          max_distance=100):
 
         """
-        Associate RNA to landmark based on the both transcriptomic landscape and the
-        distance between the RNA and the centroid of the landmark
+
+        Associate RNA to cell based on the both transcriptomic landscape and the
+        distance between the RNAs and the centroid of the cell
 
         :param key_pred: key of the node attribute containing the cluster id (default "leiden_merged")
         :type key_pred: str
@@ -599,8 +598,10 @@ class ComSeg():
         :type super_node_prior_key: str
         :param max_distance: maximum distance between a cell centroid and an RNA to be associated (default 100)
         :type max_distance: float
-        :return:
+        :return: self.G
         :rtype nx.Graph
+
+
         """
         ## merge supernodes belonging to the nuclei landmark
         from .utils.utils_graph import _gen_graph

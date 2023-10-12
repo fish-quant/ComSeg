@@ -12,10 +12,11 @@ import pandas as pd
 from scipy.sparse import csr_matrix
 import scanpy as sc
 
-#from .utils.preprocessing import sctransform_from_parameters
 import scipy
 from matplotlib import pyplot as plt
-from utils.preprocessing import run_sctransform, select_genes_for_sct
+from .utils.preprocessing import run_sctransform, select_genes_for_sct
+from .utils.preprocessing import sctransform_from_parameters
+
 """
 In situ clustering class
 take as intput a set of comseg.rst instance

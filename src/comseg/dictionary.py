@@ -168,11 +168,11 @@ class ComSegDict():
         """
         for img_name in tqdm(list(self.dataset)):
             #### GRAPH CREATION
-            comseg_m = model.ComSeg(selected_genes=self.dataset.selected_genes,
-                                    df_spots_label=self.dataset[img_name],
-                                    dict_scale=self.dataset.dict_scale,
-                                    mean_cell_diameter=self.mean_cell_diameter,  # in micrometer
-                                    )
+            comseg_m = model.ComSegGraph(selected_genes=self.dataset.selected_genes,
+                                         df_spots_label=self.dataset[img_name],
+                                         dict_scale=self.dataset.dict_scale,
+                                         mean_cell_diameter=self.mean_cell_diameter,  # in micrometer
+                                         )
             comseg_m.create_graph(dict_co_expression=self.dataset.dict_co_expression,
                                   )
 
