@@ -1,12 +1,12 @@
 
 
 
+
 import matplotlib
 #matplotlib.use('Qt5Agg')
 import sys
-sys.path += ["/home/tom/Bureau/phd/simulation/ComSeg_pkg/src"]
 
-
+sys.path += ['/home/tom/Bureau/phd/simulation/ComSeg_pkg/src']
 
 import numpy as np
 import scanpy as sc
@@ -22,38 +22,74 @@ import importlib
 
 from pathlib import Path
 from tqdm import tqdm
+import argparse
+import datetime
+#importlib.reload(dataset)
 
-importlib.reload(dataset)
+if __name__ == '__main__':
 
-if __name__ == '_main__':
+    e = datetime.datetime.now()
+    date_str = f"{e.month}_d{e.day}_h{e.hour}_min{e.minute}_s{e.second}_r" + str(random.randint(0, 5000))
+    parser = argparse.ArgumentParser(description='test')
+    ###################
+    ###### hyper-parameter
+    ###################
+    parser.add_argument("--max_cell_diameter", type=float,
+                        default=15)  # TODO
+    parser.add_argument("--mean_cell_diameter", type=float,
+                        default=10)  # TODO
+
+    parser.add_argument("--path_dataset_folder", type=str,
+                        default="/media/tom/T7/regular_grid/simu1912/cube2D_step100/dataframe_folder/ns0_talassa_max3/")  # TODO
+    parser.add_argument("--path_to_mask_prior", type=str,
+                        default="/media/tom/T7/regular_grid/simu1912/cube2D_step100/remove20/nuclei/")  # TODO
+    parser.add_argument("--path_dict_cell_centroid", type=str,
+                        default="/media/tom/T7/regular_grid/simu1912/cube2D_step100/remove20/dico_centroid/")
+    parser.add_argument("--path_simulation_gr", type=str,
+                        default='/media/tom/T7/regular_grid/simu1912/cube2D_step100/dico_simulation_nsforest0_thalassa_v0/')  # TODO
+    parser.add_argument("--path_centroid", type=str,
+                        default='/home/tom/Bureau/phd/simulation/mycode/centroid/')  # TODO
+    parser.add_argument("--k_nearest_neighbors", type=int,
+                        default=10)  # TODO
+    parser.add_argument("--weight_mode", type=str,
+                        default='original')  # TO
+    parser.add_argument("--eps_min_weight", type=float, default=0)
+    parser.add_argument("--convex_hull", type=bool,
+                        default=False)  # TO
+    parser.add_argument("--port", default=3950)
+    parser.add_argument("--mode", default='client')
+    parser.add_argument("--host", default='127.0.0.2')
+    args = parser.parse_args()
 
     #### HYPERPARAMETER ####
-
-    mean_cell_diameter = 15
+    max_cell_diameter = args.max_cell_diameter
+    mean_cell_diameter = args.mean_cell_diameter
     in_situ_egde_n_neighbors = 40
-    in_situ_egde_n_radius = mean_cell_diameter / 4
+    in_situ_egde_n_radius = mean_cell_diameter / 2
 
     #l = ['08_IR5M_Pdgfra-Cy3_Serpine1-Cy5_010.tiff', '08_IR5M_Pdgfra-Cy3_Serpine1-Cy5_009.tiff', '08_IR5M_Pdgfra-Cy3_Serpine1-Cy5_008.tiff', '08_IR5M_Pdgfra-Cy3_Serpine1-Cy5_007.tiff', '08_IR5M_Pdgfra-Cy3_Serpine1-Cy5_006.tiff', '08_IR5M_Pdgfra-Cy3_Serpine1-Cy5_005.tiff', '08_IR5M_Pdgfra-Cy3_Serpine1-Cy5_004.tiff', '08_IR5M_Pdgfra-Cy3_Serpine1-Cy5_003.tiff', '08_IR5M_Pdgfra-Cy3_Serpine1-Cy5_002.tiff', '08_IR5M_Pdgfra-Cy3_Serpine1-Cy5_001.tiff', '07_CtrlNI_Pdgfra-Cy3_Serpine1-Cy5_006.tiff', '07_CtrlNI_Pdgfra-Cy3_Serpine1-Cy5_005.tiff', '07_CtrlNI_Pdgfra-Cy3_Serpine1-Cy5_004.tiff', '07_CtrlNI_Pdgfra-Cy3_Serpine1-Cy5_002.tiff', '06_IR5M_Pdgfra-Cy3_Mki67-Cy5_009.tiff', '06_IR5M_Pdgfra-Cy3_Mki67-Cy5_008.tiff', '06_IR5M_Pdgfra-Cy3_Mki67-Cy5_007.tiff', '06_IR5M_Pdgfra-Cy3_Mki67-Cy5_006.tiff', '06_IR5M_Pdgfra-Cy3_Mki67-Cy5_005.tiff', '06_IR5M_Pdgfra-Cy3_Mki67-Cy5_004.tiff', '06_IR5M_Pdgfra-Cy3_Mki67-Cy5_003.tiff', '06_IR5M_Pdgfra-Cy3_Mki67-Cy5_002.tiff', '06_IR5M_Pdgfra-Cy3_Mki67-Cy5_001.tiff', '05_CtrlNI_Pdgfra-Cy3_Mki67-Cy5_006.tiff', '05_CtrlNI_Pdgfra-Cy3_Mki67-Cy5_005.tiff', '05_CtrlNI_Pdgfra-Cy3_Mki67-Cy5_004.tiff', '05_CtrlNI_Pdgfra-Cy3_Mki67-Cy5_003.tiff', '05_CtrlNI_Pdgfra-Cy3_Mki67-Cy5_002.tiff', '05_CtrlNI_Pdgfra-Cy3_Mki67-Cy5_001.tiff', '04_IR5M_Chil3-Cy3_Serpine1-Cy5_004.tiff']
-
-
-
     ### define the gene you want to study, you can restrict it to few genes you want to study.
-
     ## path to you .csv spots coordiante folder
-    path_dataset_folder = "/media/tom/T7/simulation/exp_same_cyto/same_param1_4_0/dataframe_cluster_filter_max3/"
 
+
+    path_dataset_folder = args.path_dataset_folder
     ##path to your prior segmentation mask
-    path_to_mask_prior = "/media/tom/T7/simulation/exp_same_cyto/same_param1_4_0/remove20/nuclei/"
+    path_to_mask_prior = args.path_to_mask_prior
 
+    path_dict_cell_centroid = args.path_dict_cell_centroid
+    path_simulation_gr = args.path_simulation_gr
+
+    args.path_save = args.path_dataset_folder + "results/" + date_str + "/"
+    Path(args.path_save).mkdir(parents=True, exist_ok=True)
     ## scale/ pixel size in um
-    dict_scale = {"x": 0.103, 'y': 0.103, "z": 0.3}
+    dict_scale = {"x":  0.150, 'y':  0.150, "z": 0.3}
 
     ### create the dataset object
     dataset_non_conv = comseg.dataset.ComSegDataset(
                                            path_dataset_folder=path_dataset_folder,
                                            path_to_mask_prior=path_to_mask_prior,
                                            dict_scale=dict_scale,
-                                           mask_file_extension=".tiff",
+                                           mask_file_extension=".npy",
                                 )
 
     ### add prior knowledge, here using nucleus segmentation mask
@@ -62,7 +98,7 @@ if __name__ == '_main__':
     ### compute the co-expression correlation at the dataset scale
     dico_proba_edge, count_matrix = dataset_non_conv.compute_edge_weight(  # in micrometer
         images_subset=None,
-        mode="dist_weighted",
+       # mode="dist_weighted",
         n_neighbors=in_situ_egde_n_neighbors,
         radius=in_situ_egde_n_radius,  # in micormeter
         distance="pearson",
@@ -99,28 +135,40 @@ if __name__ == '_main__':
     Comsegdict = dictionary.ComSegDict(
                  dataset=dataset_non_conv,
                  mean_cell_diameter= mean_cell_diameter,
-                 clustering_method="louvain_with_prior",
-                 weights_name="weight",
+                 clustering_method="with_prior",
+                # weights_name="weight",
                  prior_keys="in_nucleus",
                  seed=None,
                  super_node_prior_keys="in_nucleus",
-                 confidence_level=1
+                 confidence_level=1,
+                eps_min_weight=args.eps_min_weight,
                 )
 
-    Comsegdict.compute_communty_vector()
+
+    Comsegdict.compute_community_vector(
+        k_nearest_neighbors=args.k_nearest_neighbors,
+        distance_weight_mode="linear",
+        weight_mode=args.weight_mode,
+        select_only_positive_edges=True,
+        remove_self_node=True,
+    )
+
+
+
 
 
     Comsegdict.compute_insitu_clustering(
         size_commu_min=3,
-        norm_vector=True,
+        norm_vector= True,
         ### parameter clustering
-        n_pcs=15,
-        n_comps=15,
+        n_pcs=30,
+        n_comps=30,
         clustering_method="leiden",
-        n_neighbors=40,
+        n_neighbors=20,
         resolution=1,
         palette=None,
         min_merge_correlation=0.9,
+        nb_min_cluster=15,
     )
 
     import scanpy as sc
@@ -139,33 +187,26 @@ if __name__ == '_main__':
 
 
     Comsegdict.classify_centroid(
-            path_dict_cell_centroid = "/media/tom/T7/simulation/exp_same_cyto/same_param1_4_0/remove20/dico_centroid/",
+            path_dict_cell_centroid = path_dict_cell_centroid,
                           n_neighbors=15,
                           dict_in_pixel=True,
-                          max_dist_centroid=5.0,
+                          max_dist_centroid=mean_cell_diameter / 2,
                           key_pred="leiden_merged",
-                          distance="gaussian",
-                          convex_hull_centroid=True,
-                            file_extension = ".tiff.npy")
+                          distance="ngb_distance_weights",
+                          convex_hull_centroid=args.convex_hull,
+                            file_extension = ".npy")
 
     Comsegdict.associate_rna2landmark(
         key_pred="leiden_merged",
         super_node_prior_key='in_nucleus',
         distance='distance',
-        max_distance=30)
+        max_distance=max_cell_diameter)
 
 
 
-    Comsegdict.anndata_from_comseg_result()
-    adata = Comsegdict.final_anndata
-    #sc.tl.pca(adata, svd_solver='arpack', n_comps = 0)
-    sc.pp.neighbors(adata, n_neighbors=30, n_pcs=0)
-    sc.tl.leiden(adata,  resolution=0.5)
-    sc.tl.umap(adata)
-    sc.pl.umap(adata, color=["leiden"], palette=palette, legend_loc='on data')
+######################"""
 
 
-    ############# compute_result metrics #############
 
     dico_dico_commu = {}
     selected_genes = dataset_non_conv.selected_genes
@@ -173,12 +214,11 @@ if __name__ == '_main__':
     for gene_id in range(len(selected_genes)):
         gene_index_dico[selected_genes[gene_id]] = gene_id
 
-    list_image = [img for img in Comsegdict if  str(type(Comsegdict[img])) == "<class 'comseg.rst.model.ComSeg'>"]
+    list_image = [img for img in Comsegdict if  str(type(Comsegdict[img]))]
 
-    path_nuclei = "/media/tom/T7/simulation/exp_same_cyto/same_param1_4_0/remove20/nuclei/"
     for img_name in tqdm(list_image):
         dico_dico_commu[img_name] = {}
-        cell_unique = np.unique(tifffile.imread(path_nuclei + img_name + ".tiff"))
+        cell_unique = np.unique(np.load(path_to_mask_prior + img_name + ".npy"))
         G = Comsegdict[img_name].G
         ###################
         dico_expression_m_nuc = {}
@@ -327,30 +367,30 @@ if __name__ == '_main__':
         ###### cell id mol matchinf
         from sklearn.metrics.cluster import adjusted_rand_score
         from sklearn import metrics
+        from comseg.utils.preprocessing import sctransform_from_parameters
 
-
+        #path_simulation_gr = "/media/tom/T7/regular_grid/simu1912/cube2D_step100/dico_simulation_nsforest0_thalassa_oldversion/"
         for image_name in list(dico_dico_commu.keys()):
             print(image_name)
-            cell_unique = np.unique(tifffile.imread(path_nuclei + image_name + ".tiff"))
+            cell_unique = np.unique(np.load(path_to_mask_prior + image_name + ".npy"))
 
-            dico_simulation = np.load('/media/tom/T7/simulation/exp_same_cyto/same_param1_4_0/dico_simulation/' +
-                                      image_name + '.tiff.npy', allow_pickle = True).item()
+            dico_simulation = np.load(path_simulation_gr +
+                                      image_name + '.npy', allow_pickle=True).item()
 
-            resize_mask = np.load("/media/tom/T7/simulation/exp_same_cyto/same_param1_4_0/remove20/resized_mask/08_IR5M_Pdgfra-Cy3_Serpine1-Cy5_010.tiff.npy")
+            #     resize_mask = np.load("/media/tom/T7/simulation/exp_same_cyto/same_param1_4_0/remove20/resized_mask/08_IR5M_Pdgfra-Cy3_Serpine1-Cy5_010.tiff.npy")
 
             dico_ground_truth = {}
             for nuc in cell_unique[1:]:
+                if nuc == 1:
+                    continue
                 dico_ground_truth[nuc] = dico_simulation["dico_cell_index"][nuc]['type']
                 dico_dico_commu[image_name]["dico_ground_truth"] = dico_ground_truth
 
-        seq_scrna_centroids = np.load(
-            "/home/tom/Bureau/phd/simulation/mycode/centroid/scrna_centroidsnsforest0_thalassadico_simulationnornmalized_True.npy",
+        seq_scrna_centroids = np.load(Path(args.path_centroid)  / "scrna_centroidsnsforest0_thalassadico_simulationnornmalized_True.npy",
             allow_pickle=True)
-        seq_scrna_unique_clusters =  np.load(
-            "/home/tom/Bureau/phd/simulation/mycode/centroid/scrna_unique_clustersnsforest0_thalassadico_simulation_nsforest0_thalassa.npy",
+        seq_scrna_unique_clusters = np.load(Path(args.path_centroid)  / "scrna_unique_clustersnsforest0_thalassadico_simulation_nsforest0_thalassa.npy",
             allow_pickle=True)
-        seq_param_sctransform_anndata =  np.load(
-            "/home/tom/Bureau/phd/simulation/mycode/centroid/param_sctransform_anndatansforest0_thalassa.npy",
+        seq_param_sctransform_anndata = np.load(Path(args.path_centroid)  / "param_sctransform_anndatansforest0_thalassa.npy",
             allow_pickle=True)
 
         y_true_cell_type_classif_only = []
@@ -372,7 +412,7 @@ if __name__ == '_main__':
             y_true_cell_type  = []
             y_pred_cell_type = []
             dico_cell_index_pred = {}
-            for nuc_index in dico_expression:  ## take into account other non pred list
+            for nuc_index in dico_ground_truth:  ## take into account other non pred list
                 if True:
                     if nuc_index == 1:
                         if 1 not in dico_ground_truth:
@@ -450,8 +490,85 @@ if __name__ == '_main__':
         print(f"median prc_not_catch_list {round(np.median(total_prc_not_catch_list), 4)}")
         print(f"median error_list {round(np.median(total_error_list), 4)}")
         print()
-        print(f'mean aji {np.mean(total_aji)}')
-        acc = metrics.accuracy_score(y_true=y_true_cell_type_total,
-                                     y_pred=y_pred_cell_type_total)
-        print(f"acc without taking into account no pred cell {round(acc, 4)}")
-        print()
+        print(args)
+        Comsegdict.save(Path(args.path_save) / ("Comsegdict." + date_str + "pickle.txt"))
+        print("model saved")
+
+
+        """
+        
+        k=10
+        acc without taking into account no pred cell 0.8406
+        acc with taking into account no pred cell 0.8406
+        % of predicted 1.0
+        acc without taking into account no pred cell 0.8406
+        acc with taking into account no pred cell 0.8406
+        % of predicted 1.0
+        mean iou 0.7421
+        mean prc_not_catch_list 0.1776
+        mean error_list 0.10599055361427044
+        median iou 0.7965
+        median prc_not_catch_list 0.0895
+        median error_list 0.0516
+        Namespace(convex_hull=False, eps_min_weight=0, host='127.0.0.1', k_nearest_neighbors=10, max_cell_diameter=15, mean_cell_diameter=10, mode='client', path_centroid='/home/tom/Bureau/phd/simulation/mycode/centroid/', path_dataset_folder='/media/tom/T7/regular_grid/simu1912/cube2D_step100/dataframe_folder/ns0_talassa_max3/', path_dict_cell_centroid='/media/tom/T7/regular_grid/simu1912/cube2D_step100/remove20/dico_centroid/', path_save='/media/tom/T7/regular_grid/simu1912/cube2D_step100/dataframe_folder/ns0_talassa_max3/results/10_d29_h15_min13_s50_r827/', path_simulation_gr='/media/tom/T7/regular_grid/simu1912/cube2D_step100/dico_simulation_nsforest0_thalassa/', path_to_mask_prior='/media/tom/T7/regular_grid/simu1912/cube2D_step100/remove20/nuclei/', port='35051', weight_mode='original')
+        model saved
+        
+        
+            
+        #### HYPERPARAMETER ####
+        max_cell_diameter = 30
+        mean_cell_diameter = 15
+        in_situ_egde_n_neighbors = 40
+        in_situ_egde_n_radius = mean_cell_diameter / 4
+        
+        
+        acc without taking into account no pred cell 0.8209
+        acc with taking into account no pred cell 0.82
+        % of predicted 0.9988532110091743
+        acc without taking into account no pred cell 0.8209
+        acc with taking into account no pred cell 0.82
+        % of predicted 0.9988532110091743
+        mean iou 0.7314
+        mean prc_not_catch_list 0.1472
+        mean error_list 0.14963135470556704
+        median iou 0.8082
+        median prc_not_catch_list 0.0696
+        median error_list 0.0546
+        mean aji nan
+        acc without taking into account no pred cell 0.8209
+        
+        
+        
+        
+        
+        
+        with clustering neiborhood = 40
+        
+        acc without taking into account no pred cell 0.8163
+        acc with taking into account no pred cell 0.8154
+        % of predicted 0.9988532110091743
+        acc without taking into account no pred cell 0.8163
+        acc with taking into account no pred cell 0.8154
+        % of predicted 0.9988532110091743
+        mean iou 0.7318
+        mean prc_not_catch_list 0.1427
+        mean error_list 0.15348626750569655
+        median iou 0.8095
+        median prc_not_catch_list 0.0678
+        median error_list 0.0554
+        mean aji nan
+        acc without taking into account no pred cell 0.8163
+        
+        """
+
+
+
+
+
+
+
+
+
+
+
+
