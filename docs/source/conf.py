@@ -38,6 +38,8 @@ autodoc_mock_imports += ["anndata","contourpy","cycler","fonttools","h5py","igra
                          "statsmodels","stdlib-list","tbb","texttable","threadpoolctl","tifffile","tqdm","umap-learn","zipp",]
 import os
 
+
+sys.path.insert(0, os.path.abspath("../../src/"))
 sys.path.insert(0, os.path.abspath(os.path.join('..', '..', 'src')))
 sys.path.insert(0, os.path.abspath('../../../'))
 sys.path.insert(0, os.path.abspath('.'))
