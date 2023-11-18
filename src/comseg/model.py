@@ -49,7 +49,8 @@ class ComSegGraph():
 
     #. create the graph
     #. apply community detection / graph partitioning
-    #. add to the communities the label/cell type computed by the instance of the class InSituClustering
+    #. Compute the community expression vector $V_c$
+    #. add to the communities the labels/cell types computed by the clustering of $V_c$ the by the :func:`InSituClustering` class
     #. add the centroid of the cells in the graph
     #. associate RNAs to cell
     #. compute the cell-by-gene matrix of the input sample
@@ -64,8 +65,6 @@ class ComSegGraph():
                 k_nearest_neighbors = 10,
                 edge_max_length = None,
                 eps_min_weight =  0,
-
-
                  ):
 
 
@@ -159,10 +158,8 @@ class ComSegGraph():
             gene_source = G.nodes[edges[0]]['gene']
             gene_target = G.nodes[edges[1]]['gene']
             G.add_edge(edges[0], edges[1])
-            weight = self.dict_co_expression[gene_source][gene_target] + self.eps_min_weight
-            relative_weight = self.dict_co_expression[gene_source][gene_target]
+            weight = self.dict_co_expression[gene_source][gene_target]
             G[edges[0]][edges[1]]["weight"] = weight
-            G[edges[0]][edges[1]]["relative_weight"] = relative_weight
             G[edges[0]][edges[1]]["distance"] = distance_list[edges_index]
             G[edges[0]][edges[1]]["gaussian"] = normal_dist(distance_list[edges_index], mean=0, sd =1)
 
@@ -252,8 +249,6 @@ class ComSegGraph():
                 if self.G.nodes[node]['gene'] == "centroid":
                         continue
                 self.G.nodes[node]["index_commu"] =  index_commu
-                if clustering_method == "with_prior":
-                    self.G.nodes[node]["index_commu_in_nucleus"] =  final_graph.nodes[index_commu]['prior_index']
                 if "z" in self.G.nodes[0]:
                     cluster_coordinate.append([self.G.nodes[node]['x'],
                                                self.G.nodes[node]['y'],
@@ -285,7 +280,6 @@ class ComSegGraph():
         assert nb_egde_total == len(self.G.edges()) # check it is still the same graph
         self.community_anndata = anndata
         self._estimation_density_vec(
-                               # max_dist = 5,
                                key_word="kernel_vector",
                                remove_self_node=True,
                                norm_gauss=False,
@@ -310,7 +304,6 @@ class ComSegGraph():
 
 
         list_index_commu = list(self.community_anndata.obs['index_commu'])
-        ## get a dico {commu : cluster ID}
         dico_commu_cluster = {}
         for index_commu in dict_cluster_id:
             dico_commu_cluster[list_index_commu[index_commu]] = dict_cluster_id[index_commu]
@@ -430,13 +423,13 @@ class ComSegGraph():
                           distance = "ngb_distance_weights",
                           ):
         """
-        classify cells  based on their  neighbor RNA labels from ``add_cluster_id_to_graph()``
+        classify cells centroid based on their  neighbor RNAs labels from ``add_cluster_id_to_graph()``
 
         :param dict_cell_centroid: dict of centroid coordinate  {cell : {z:,y:,x:}}
         :type dict_cell_centroid: dict
         :param n_neighbors: number of neighbors to consider for the classification of the centroid (default 15)
         :type n_neighbors: int
-        :param dict_in_pixel: if True the centroid are in pixel and rescal if False the centroid are in um (default True)
+        :param dict_in_pixel: if True the centroid are in pixel and rescals if False the centroid are in um (default True)
         :type dict_in_pixel: bool
         :param max_dist_centroid: maximum distance to consider for the centroid, if None it is set to mean_cell_diameter / 2
         :type max_dist_centroid: int
@@ -666,11 +659,9 @@ class ComSegGraph():
                             # if node not in [nearest_c,farest ]:
                             #    assert nx.shortest_path_length(G.subgraph(cc).to_undirected(), source=farest, target=node,weight =  "distance")
                             #    >= nx.shortest_path_length(G.subgraph(cc).to_undirected(), source=nearest_c, target=node,weight =  "distance")
-                        except ValueError:
-                            nn_find += 1
-                            print(
-                                f"node {node} not find in dikjtra why ? should be solve with undirected graph")
-                            print(stop)
+                        except ValueError as e:
+                            print(e)
+                            raise ValueError(f"node {node} not find in dikjtra")
         ## add new_label to the grpa
         for node_all in G.nodes():
             G.nodes[node_all]["cell_index_pred"] = 0
@@ -761,7 +752,6 @@ class ComSegGraph():
 
                 csv_list_cell += [list_cell_id[cell_index]] * len(list_genes_name[cell_index])
                 csv_list_gene += list_genes_name[cell_index]
-                #csv_list_cell_type += [list_cell_type[cell_index]] * len(list_genes_name[cell_index])
 
         df_spots = pd.DataFrame({"z": csv_list_z,
                                  "y": csv_list_y,
