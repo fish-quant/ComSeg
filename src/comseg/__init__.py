@@ -8,4 +8,4 @@ from .utils import *
 
 from .clustering import *
 from .model import *
-from utils import *
+from .utils import *
