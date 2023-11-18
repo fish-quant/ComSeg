@@ -28,8 +28,8 @@ import anndata as ad
 #import model
 #import clustering
 import pickle
-from .clustering import InSituClustering
-
+#from .clustering import InSituClustering
+from . import model
 from pathlib import Path
 import numpy as np
 
