@@ -26,12 +26,11 @@ from tqdm import tqdm
 import anndata as ad
 #from model import ComSegGraph
 #import clustering
-#from . import clustering
-#from unused_files.similarity_m import get_simialrity_matrix
-#from utils import data_processing as data_processing
-import model
+#from . import clustering ## for dev mode
+#import model
+#import clustering
 import pickle
-
+from .clustering import InSituClustering
 
 from pathlib import Path
 import numpy as np

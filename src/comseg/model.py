@@ -34,7 +34,9 @@ import networkx.algorithms.community as nx_comm
 import numpy as np
 from sklearn.utils.extmath import weighted_mode
 from scipy.spatial import ConvexHull, Delaunay
-#from .utils import custom_louvain
+#from .utils import custom_louvain ## for dev mode
+from utils import custom_louvain
+
 
 __all__ = ["ComSegGraph"]
 

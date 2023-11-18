@@ -64,14 +64,11 @@ def expression_correlation_from_anndata(anndata,
         anndata = anndata[anndata.obs.condition== condition]
 
     if sample_size is not None:
-
         random_index = sample_without_replacement(len(anndata),
                                                   sample_size,
                                                   random_state=random_state)
     else:
         random_index = np.arange(len(anndata))
-
-
 
     count_matrix = anndata[random_index, selected_genes].X
 
@@ -99,7 +96,7 @@ def expression_correlation_from_anndata(anndata,
 
 def run_sctransform(data, clip_range=None, verbose=True, debug_path=None, plot_model_pars=False, **kwargs):
     """
-    this function is cpy fromm SSAM  https://github.com/HiDiHlabs/ssam
+    this function is inspired of SSAM  https://github.com/HiDiHlabs/ssam
     Run 'sctransform' R package and returns the normalized matrix and the model parameters.
     Package 'feather' is used for the data exchange between R and Python.
     :param data: N x D ndarray to normlize (N is number of samples, D is number of dimensions).
