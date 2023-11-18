@@ -1,7 +1,7 @@
 
 
 
-
+from . import model
 from .model import ComSegGraph
 
 #from . import clustering

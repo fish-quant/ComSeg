@@ -47,6 +47,9 @@ sys.path.insert(0, os.path.abspath('../../..'))
 sys.path.insert(0, os.path.abspath('../../src/comseg'))
 sys.path.insert(0, os.path.abspath('../../src/comseg/utils'))
 sys.path.insert(0, os.path.abspath('../../src/comseg/clustering.py'))
+sys.path.insert(0, os.path.abspath('../../src/comseg/model.py'))
+sys.path.insert(0, os.path.abspath('../../src/comseg/model.py'))
+
 
 sys.path.insert(0, os.path.abspath('../../src'))
 sys.path += ["/home/tom/anaconda3/envs/comseg_v0/lib/python3.8",
