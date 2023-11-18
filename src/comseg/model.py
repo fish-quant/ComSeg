@@ -15,10 +15,6 @@ return a count matrix of the image
 
 #%%
 
-import numpy as np
-import os
-import sys
-
 from tqdm import tqdm
 import networkx as nx
 import scipy.sparse as sp
@@ -34,8 +30,7 @@ import networkx.algorithms.community as nx_comm
 import numpy as np
 from sklearn.utils.extmath import weighted_mode
 from scipy.spatial import ConvexHull, Delaunay
-#from .utils import custom_louvain ## for dev mode
-from utils import custom_louvain
+from .utils import custom_louvain ## for dev mode
 
 
 __all__ = ["ComSegGraph"]
@@ -47,19 +42,17 @@ def normal_dist(x , mean , sd):
 
 
 class ComSegGraph():
+
     """
-
-
     Class to the generate the graph of RNA spots from a CSV file/image
     this class is in charge of :
-    - create the graph
-    - apply community detection / graph partitioning
-    - add to the communities the label/cell type computed by the instance of the class InSituClustering
-    - add the centroid of the cells in the graph
-    - associate RNAs to cell
-    - compute the cell-by-gene matrix of the input sample
 
-
+    #. create the graph
+    #. apply community detection / graph partitioning
+    #. add to the communities the label/cell type computed by the instance of the class InSituClustering
+    #. add the centroid of the cells in the graph
+    #. associate RNAs to cell
+    #. compute the cell-by-gene matrix of the input sample
     """
 
     def __init__(self,
@@ -70,7 +63,7 @@ class ComSegGraph():
                 mean_cell_diameter=15,  # in micrometer
                 k_nearest_neighbors = 10,
                 edge_max_length = None,
-                eps_min_weight =  0.1,
+                eps_min_weight =  0,
 
 
                  ):
@@ -90,8 +83,6 @@ class ComSegGraph():
         :type k_nearest_neighbors: int
         :param edge_max_length: default is mean_cell_diameter / 4
         :type edge_max_length: float
-        :param eps_min_weight: minumum edge weigth default is 0.01
-        :type eps_min_weight: float
         """
 
 
@@ -115,10 +106,9 @@ class ComSegGraph():
 
     ## create directed graph
 
-    def create_graph(self,
-                     weight_mode = "positive"):
+    def create_graph(self):
         """
-        create the graph of the RNA nodes, all the graph generation parameters are set in the __init__ function
+        create the graph of the RNA nodes, all the graph generation parameters are set in the __init__() function
 
         :return: a graph of the RNA spots
         :rtype: nx.Graph
@@ -169,19 +159,8 @@ class ComSegGraph():
             gene_source = G.nodes[edges[0]]['gene']
             gene_target = G.nodes[edges[1]]['gene']
             G.add_edge(edges[0], edges[1])
-            if weight_mode == "positive_eps":
-                weight = np.max([self.dict_co_expression[gene_source][gene_target], 0]) + self.eps_min_weight   ##
-            #weight = np.max([self.dict_co_expression[gene_source][gene_target],  self.eps_min_weight ])
-            elif weight_mode == "positive":
-                weight = np.max([self.dict_co_expression[gene_source][gene_target], 0])
-            elif weight_mode == "relative":
-                weight = self.dict_co_expression[gene_source][gene_target]
-            elif weight_mode == "original":
-                weight = self.dict_co_expression[gene_source][gene_target] + self.eps_min_weight
-            else:
-                raise ValueError(f"weight mode {weight_mode} not recognized")
+            weight = self.dict_co_expression[gene_source][gene_target] + self.eps_min_weight
             relative_weight = self.dict_co_expression[gene_source][gene_target]
-
             G[edges[0]][edges[1]]["weight"] = weight
             G[edges[0]][edges[1]]["relative_weight"] = relative_weight
             G[edges[0]][edges[1]]["distance"] = distance_list[edges_index]
@@ -198,47 +177,33 @@ class ComSegGraph():
 
     def community_vector(self,
                          clustering_method="with_prior",
-                         prior_keys="in_nucleus",
                          seed=None,
-                         super_node_prior_keys="in_nucleus",
-                         confidence_level=1,
-                         distance_weight_mode="exp",
-                         select_only_positive_edges = False,
-                         remove_self_node = True,):
+                         prior_name="in_nucleus",
+                         ):
 
 
         """
         Partition the graph into communities/sets of RNAs and computes and stores the "community expression vector"
          in the ``community_anndata`` class attribute
         :param clustering_method: choose in ["with_prior",  "louvain"], "with_prior" is our graph partitioning/community
-                detection method taking into account prior knowledge
+                detection method taking into account prior knowledge from landmarks like nuclei or cell mask.
         :type clustering_method: str
-        :param prior_keys: key of the prior cell assignment in the node attribute dictionary and in the input CSV file
-        :type prior_keys: str
-        :param seed: (optional) seed for the grpah partioning initialization
+        :param seed: (optional) seed for the graph partitioning initialization
         :type seed: int
-        :param super_node_prior_keys: key of the prior cell assignment in the node attribute
-             and in the input CSV file that is certain. node labeled with the same supernode prior key will be merged.
-             prior_keys and super_node_prior_keys can be the different if two landmark mask priors are available.
-             exemple: super_node_prior_keys = "nucleus_landmak", prior_keys = "uncertain_cell_landmark"
-        :type super_node_prior_keys: str
-        :param confidence_level: confidence level for the prior knowledge (prior_keys) in the range [0,1]. 1 means that the prior knowledge is certain.
-        :type confidence_level: float
+        :param prior_name: (optional) Name of the prior cell assignment column the input CSV file. Node with the same prior label will be merged into a super node.
+        node with different prior label can not be merged during the modularity optimization.
+        :type prior_name: str
         :return: a graph with a new node attribute "community" with the community detection vector
         :rtype: nx.Graph
         """
-
+        confidence_level = 1 ##### experimental parameter
 
         nb_egde_total = len(self.G.edges())
-
-        ### if prior create new graph + matching super-node dico
-        if super_node_prior_keys is not None:
-            #print(f'creation of  super node with {super_node_prior_keys}')
+        if prior_name is not None:
             partition = []
-            assert clustering_method in ["with_prior", "louvain"]
+            assert clustering_method in ["with_prior"]
             list_nodes = np.array([index for index, data in self.G.nodes(data=True)])
-
-            array_super_node_prior = np.array([data[super_node_prior_keys] for index, data in self.G.nodes(data=True)])
+            array_super_node_prior = np.array([data[prior_name] for index, data in self.G.nodes(data=True)])
             unique_super_node_prior = np.unique(array_super_node_prior)
             if 0 in unique_super_node_prior:
                 assert unique_super_node_prior[0] == 0
@@ -250,12 +215,9 @@ class ComSegGraph():
             partition = None
 
         assert nx.is_directed(self.G)
-        if  select_only_positive_edges:
-            G = self.G.copy()
-            G.remove_edges_from([(d[0], d[1]) for d in list(G.edges(data=True)) if d[2]["weight"] < 0])
-            print("only positive w selected")
-        else:
-            G = self.G.copy()
+        G = self.G.copy()
+        G.remove_edges_from([(d[0], d[1]) for d in list(G.edges(data=True)) if d[2]["weight"] < 0])
+        print("only positive w selected")
         if clustering_method == "louvain":
             comm = nx_comm.louvain_communities(G.to_undirected(reciprocal=False),
                                                weight="weight",
@@ -272,7 +234,7 @@ class ComSegGraph():
                     threshold=0.0000001,
                     seed=seed,
                     partition=partition,
-                    prior_key=prior_keys,
+                    prior_key=prior_name,
                     confidence_level=confidence_level)
 
 
@@ -325,9 +287,9 @@ class ComSegGraph():
         self._estimation_density_vec(
                                # max_dist = 5,
                                key_word="kernel_vector",
-                               remove_self_node=remove_self_node,
+                               remove_self_node=True,
                                norm_gauss=False,
-                                distance_weight_mode =distance_weight_mode)
+                                distance_weight_mode ="linear")
 
         return self.community_anndata
 
@@ -466,7 +428,6 @@ class ComSegGraph():
                           max_dist_centroid = None,
                           key_pred = "leiden_merged",
                           distance = "ngb_distance_weights",
-                          convex_hull_centroid = True,
                           ):
         """
         classify cells  based on their  neighbor RNA labels from ``add_cluster_id_to_graph()``
@@ -477,12 +438,11 @@ class ComSegGraph():
         :type n_neighbors: int
         :param dict_in_pixel: if True the centroid are in pixel and rescal if False the centroid are in um (default True)
         :type dict_in_pixel: bool
-        :param max_dist_centroid: maximum distance to consider for the centroid (default None)
+        :param max_dist_centroid: maximum distance to consider for the centroid, if None it is set to mean_cell_diameter / 2
         :type max_dist_centroid: int
-        :param key_pred: key of the node attribute containing the cluster id (default "leiden_merged")
+        :param key_pred: key-name of the node attribute containing the cluster id (default "leiden_merged")
         :type key_pred: str
-        :param convex_hull_centroid: check that cell centroid is in the convex hull of its RNA neighbors (default True). If not the cell centroid is not classify to avoid artefact misclassification
-        :type convex_hull_centroid: bool
+
         :return: self.G
         :rtype: nx.Graph
         """
@@ -490,7 +450,7 @@ class ComSegGraph():
         self.dict_cell_centroid = dict_cell_centroid
 
         if max_dist_centroid is None:
-            max_dist_centroid = self.mean_cell_diameter / 3
+            max_dist_centroid = self.mean_cell_diameter / 2
         nbrs = NearestNeighbors(n_neighbors=n_neighbors,
                                 algorithm='ball_tree').fit(self.list_coordo_order)
 
@@ -509,7 +469,11 @@ class ComSegGraph():
                 list_coordo_order_nuc_centroid_no_scaling.append(centroid_pix)
                 list_coordo_order_nuc_centroid.append(centroid_um)
         else:
-            raise ValueError("not implemented yet with dico_in_pixel = False")
+            list_coordo_order_nuc_centroid = []
+            for nuc in self.dict_cell_centroid:
+                assert len(self.dict_cell_centroid[nuc]) == len(self.list_coordo_order[0])
+                centroid_um = self.dict_cell_centroid[nuc]
+                list_coordo_order_nuc_centroid.append(centroid_um)
 
 
         ad_nuc_centroid = nbrs.kneighbors_graph(list_coordo_order_nuc_centroid)  ## can be optimize here
@@ -555,8 +519,6 @@ class ComSegGraph():
                 dico_nuclei_centroid[nuc]["ngb_distance_weights"].append(
                     max_dist_centroid - distance_nuc_centroid[nuc_index, index_nn_centroid])
                 dico_nuclei_centroid[nuc]['nn_graph_indice'] = array_index_nn
-                dico_nuclei_centroid[nuc]["gaussian"].append(
-                    normal_dist(distance_nuc_centroid[nuc_index, index_nn_centroid], mean=0, sd=1))
 
             type_list = np.array(dico_nuclei_centroid[nuc]["type_list"])
             weights_list = np.array(dico_nuclei_centroid[nuc][distance])[type_list != None]
@@ -564,42 +526,6 @@ class ComSegGraph():
             pred_cluster = weighted_mode(a=type_list,
                                          w=weights_list)[0][0] if len(
                 type_list) > 0 else "unknown"
-
-            if convex_hull_centroid:
-                list_coordo_order = self.list_coordo_order.copy()
-                index_type_list = np.array(index_type_list)
-                index_type_list = index_type_list[type_list == pred_cluster]
-                if len(index_type_list) <= 3:
-                    pred_cluster = "unknown"
-                else:
-                    ### detect 2D input
-                    invalid_dim = np.array([np.all(
-                        list_coordo_order[index_type_list][:, i] == list_coordo_order[index_type_list][0, i]) for i
-                                            in
-                                            range(list_coordo_order.shape[1])
-                                            ]).astype(int)
-                    if np.sum(invalid_dim) == 1:
-                        assert invalid_dim[2] == 1
-                        try:
-                            convex_hull = Delaunay(list_coordo_order[index_type_list][:, 1:])
-                            is_valid_cv = convex_hull.find_simplex([[dico_nuclei_centroid[nuc]['y'], dico_nuclei_centroid[nuc]['x']]])[
-                                              0] >= 0
-                        except Exception as e:
-                            print(e)
-                            is_valid_cv = False
-
-                    else:
-                        # convex_hull = Delaunay(list_coordo_order[index_type_list])
-                        try:
-                            convex_hull = Delaunay(list_coordo_order[index_type_list][:, 1:])
-                            is_valid_cv = convex_hull.find_simplex(
-                                [[dico_nuclei_centroid[nuc]['y'], dico_nuclei_centroid[nuc]['x']]])[0] >= 0
-                        except Exception as e:
-                            print(e)
-                            is_valid_cv = False
-                    if not is_valid_cv:
-                        pred_cluster = "unknown"
-
             dico_nuclei_centroid[nuc][key_pred] = pred_cluster
 
         ### add new attribute to node centroid
@@ -621,7 +547,7 @@ class ComSegGraph():
 
     def associate_rna2landmark(self,
                          key_pred = "leiden_merged",
-                         super_node_prior_key='in_nucleus',
+                         prior_name='in_nucleus',
                          distance='distance',
                          max_cell_radius=100):
 
@@ -632,24 +558,20 @@ class ComSegGraph():
 
         :param key_pred: key of the node attribute containing the cluster id (default "leiden_merged")
         :type key_pred: str
-        :param super_node_prior_key:
-        :type super_node_prior_key: str
+        :param prior_name: prior_name attribut used in community_vector
+        :type prior_name: str
         :param max_distance: maximum distance between a cell centroid and an RNA to be associated (default 100)
         :type max_distance: float
         :return: self.G
         :rtype nx.Graph
-
-
         """
         ## merge supernodes belonging to the nuclei landmark
         from .utils.utils_graph import _gen_graph
-
         G_merge = _gen_graph(graph=self.G.copy(),
-                             super_node_prior_key=super_node_prior_key,
+                             super_node_prior_key=prior_name,
                              distance=distance,
                              key_pred=key_pred,
                              )
-
         G_merge, dico_expression_m_merge = self._associate_rna2landmark(
             G=G_merge,
             distance=distance,
@@ -848,31 +770,4 @@ class ComSegGraph():
                                  "cell": csv_list_cell})
 
         anndata.uns["df_spots"] = df_spots
-
         return anndata
-
-
-
-
-
-##################################################################
-
-
-
-
-
-if False:
-
-    path_dict_centroid_not_mean = "/media/tom/T7/regular_grid/simu1912/cube2D_step100/dico_centroid_not_mean/"
-    path_dico_mean_centroid = "/media/tom/T7/regular_grid/simu1912/cube2D_step100/dico_centroid/"
-
-    for path_dict in Path(path_dict_centroid_not_mean).glob("*.npy"):
-
-        dict_centroid = np.load(path_dict, allow_pickle=True).item()
-        dict_centroid_mean = {}
-        for cell in dict_centroid:
-            dict_centroid_mean[cell] = np.mean(dict_centroid[cell], axis=0)
-        np.save(path_dico_mean_centroid + path_dict.name, dict_centroid_mean)
-
-
-

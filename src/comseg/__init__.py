@@ -3,7 +3,7 @@
 from .clustering import InSituClustering
 from .model import ComSegGraph
 
-
+from .utils import custom_louvain
 
 #from . import model
 #from . import clustering

@@ -1,7 +1,6 @@
 
 
 
-#todo max_cell_diameter to max_cell_radius
 
 #todo add dataset to zenodo
 # todo add function to compute centroid of cell in a df format + harmoznie with the rest of the code
@@ -28,7 +27,7 @@ import anndata as ad
 #import model
 #import clustering
 import pickle
-#from .clustering import InSituClustering
+from .clustering import InSituClustering
 from .model import ComSegGraph
 from pathlib import Path
 import numpy as np
@@ -41,11 +40,9 @@ __all__ = ["ComSegDict"]
 class ComSegDict():
 
     """
-    As a dataset is often compose of many separated images. It is requiered to create many ComSeg graph of RNAs.
-    besides, the in-situ clustering to identify the transcriptomic profile is more informative at the data scale.
-    To ease the analysis entire dataset we implement ComSegDict. It is a class that store many ComSeg object
+    As a dataset is often composed of many separated images. It is requiered to create many ComSeg graph of RNAs.
+    To ease the analysis entire dataset, we implement ComSegDict. It is a class that store many ComSeg object
     and allows to perform analysis at the dataset scale.
-
     This class is implemented as a dictionary of ComSeg graph object
     """
 
@@ -197,7 +194,7 @@ class ComSegDict():
         """
         for img_name in tqdm(list(self.dataset)):
             #### GRAPH CREATION
-            comseg_m = model.ComSegGraph(selected_genes=self.dataset.selected_genes,
+            comseg_m = ComSegGraph(selected_genes=self.dataset.selected_genes,
                                          df_spots_label=self.dataset[img_name],
                                          dict_scale=self.dataset.dict_scale,
                                          mean_cell_diameter=self.mean_cell_diameter,  # in micrometer
@@ -282,7 +279,7 @@ class ComSegDict():
             self.global_anndata
         except:
             self.concatenate_anndata()
-        self.in_situ_clustering = clustering.InSituClustering(anndata=self.global_anndata,
+        self.in_situ_clustering = InSituClustering(anndata=self.global_anndata,
                                         selected_genes=self.global_anndata.var_names)
         ### APPLY NORMALIZATION
         if norm_vector:
