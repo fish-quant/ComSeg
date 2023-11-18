@@ -17,6 +17,7 @@ from matplotlib import pyplot as plt
 from .utils.preprocessing import run_sctransform, select_genes_for_sct
 from .utils.preprocessing import sctransform_from_parameters
 
+
 """
 In situ clustering class
 take as intput a set of comseg.rst instance
