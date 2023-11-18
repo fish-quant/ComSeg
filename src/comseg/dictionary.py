@@ -29,7 +29,7 @@ import anndata as ad
 #import clustering
 import pickle
 #from .clustering import InSituClustering
-from . import model
+from .model import ComSegGraph
 from pathlib import Path
 import numpy as np
 

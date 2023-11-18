@@ -1,6 +1,7 @@
 
 
 from .clustering import InSituClustering
+from .model import ComSegGraph
 
 #from . import model
 #from . import clustering
@@ -18,4 +19,4 @@ from .clustering import InSituClustering
 #from .model import *
 #from .utils import *
 
-__all__ = ["InSituClustering"]
+__all__ = ["InSituClustering", "ComSegGraph"]
