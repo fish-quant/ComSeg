@@ -19,8 +19,6 @@ then apply a community classification (in situ clustering class)
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath('.'))
-sys.path.insert(0, os.path.abspath('..'))
 from tqdm import tqdm
 
 import anndata as ad
