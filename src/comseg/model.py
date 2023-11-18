@@ -49,8 +49,8 @@ class ComSegGraph():
 
     #. create the graph
     #. apply community detection / graph partitioning
-    #. Compute the community expression vector $V_c$
-    #. add to the communities the labels/cell types computed by the clustering of $V_c$ the by the :func:`InSituClustering` class
+    #. Compute the community expression vector :math:`V_c`
+    #. add to the communities the labels/cell types computed by the clustering of :math:`V_c` the by the :func:`InSituClustering` class
     #. add the centroid of the cells in the graph
     #. associate RNAs to cell
     #. compute the cell-by-gene matrix of the input sample

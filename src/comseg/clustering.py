@@ -1,6 +1,5 @@
 
 
-#todo     ### ADD FCT TO MERGE CLUSTER  WITH A PREDEFINE NUMBER OF CLUSTER TO MERGE
 
 
 import sklearn
@@ -16,19 +15,8 @@ import scipy
 from matplotlib import pyplot as plt
 #from .utils.preprocessing import run_sctransform, select_genes_for_sct
 #from .utils.preprocessing import sctransform_from_parameters
-#from .utils.preprocessing import run_sctransform, select_genes_for_sct
-#from .utils.preprocessing import sctransform_from_parameters
-
-"""
-In situ clustering class
-take as intput a set of comseg.rst instance
-compute in_situclustering
-label the community
-save parameters to labeled other community with in the pca or euclidian space
-
-compute the norm parameter if need
-norm expression matrix
-"""
+from .utils.preprocessing import run_sctransform, select_genes_for_sct
+from .utils.preprocessing import sctransform_from_parameters
 
 __all__ = ["InSituClustering"]
 
@@ -37,7 +25,7 @@ __all__ = ["InSituClustering"]
 
 class InSituClustering():
     """
-    In situ clustering class takes as attribute an anndata object containing the community expression vectors
+    In situ clustering class takes as attribute an anndata object containing the community expression vectors :math:`V_c`
     of RNA partitions/communities from one or many images. This class is in charge of identifying the single cell transcriptomic
     clusters present in the dataset.
     """
@@ -201,7 +189,6 @@ class InSituClustering():
         return self.anndata
 
 
-    ###TODO  ADD FCT TO MERGE CLUSTER  WITH A PREDEFINE NUMBER OF CLUSTER TO MERGE
 
     def get_cluster_centroid(self, ## withput normalization but
                       cluster_column_name = "leiden",

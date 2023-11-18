@@ -3,7 +3,8 @@
 
 
 #todo add dataset to zenodo
-# todo add function to compute centroid of cell in a df format + harmoznie with the rest of the code
+# todo add function to compute centroid of cell in a df format + harmonize with the rest of the code
+#
 """
 class set store the graph and anndata of the comseg.rst(s) object
 preprocess it (like concatenate anndata) to perform classification
@@ -180,8 +181,6 @@ class ComSegDict():
 
     def compute_community_vector(self,
                                  k_nearest_neighbors=10,
-                                 distance_weight_mode = "exp",
-                                 weight_mode = "positive_eps",
                                  select_only_positive_edges = False,
                                  remove_self_node = True,):
         """
@@ -202,7 +201,7 @@ class ComSegDict():
                                          k_nearest_neighbors=k_nearest_neighbors,
                                          eps_min_weight=self.eps_min_weight,
                                          )
-            comseg_m.create_graph(weight_mode = weight_mode)
+            comseg_m.create_graph()
             self[img_name] = comseg_m
 
             #### COMMÛTE COMMUNITY OF RNA
@@ -213,9 +212,8 @@ class ComSegDict():
                 seed=self.seed,
                 super_node_prior_keys=self.super_node_prior_keys,
                 confidence_level=self.confidence_level,
-                distance_weight_mode=distance_weight_mode,
                 select_only_positive_edges = select_only_positive_edges,
-            remove_self_node = remove_self_node,
+                remove_self_node = remove_self_node,
             )
             self[img_name] = comseg_m
 
@@ -384,7 +382,7 @@ class ComSegDict():
                       dict_in_pixel=True,
                       max_dist_centroid=None,
                       key_pred="leiden_merged",
-                      distance="gaussian",
+                      distance="ngb_distance_weights",
                       convex_hull_centroid=True,
                         file_extension = "tiff.npy"
                       ):
@@ -421,7 +419,6 @@ class ComSegDict():
                                              max_dist_centroid=max_dist_centroid,
                                              key_pred=key_pred,
                                              distance=distance,
-                                             convex_hull_centroid=convex_hull_centroid,
                                              )
 
 
@@ -455,15 +452,6 @@ class ComSegDict():
                 super_node_prior_key=super_node_prior_key,
                 distance=distance,
                 max_cell_radius=max_cell_radius)
-
-
-    #### return an anndata with expresion vector
-    ## as obs image name | centroid coordinate |
-    # list of rna spots coordinate |
-    # list of the corresponding rna species
-    ##
-
-
 
     def anndata_from_comseg_result(self,
                                    key_cell_pred='cell_index_pred',
