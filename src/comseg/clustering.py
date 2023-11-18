@@ -14,8 +14,8 @@ import scanpy as sc
 
 import scipy
 from matplotlib import pyplot as plt
-from .utils.preprocessing import run_sctransform, select_genes_for_sct
-from .utils.preprocessing import sctransform_from_parameters
+#from .utils.preprocessing import run_sctransform, select_genes_for_sct
+#from .utils.preprocessing import sctransform_from_parameters
 
 
 """
