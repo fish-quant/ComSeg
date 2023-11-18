@@ -1,8 +1,10 @@
 
 
 
+#todo max_cell_diameter to max_cell_radius
 
-
+#todo add dataset to zenodo
+# todo add function to compute centroid of cell in a df format + harmoznie with the rest of the code
 """
 class set store the graph and anndata of the comseg.rst(s) object
 preprocess it (like concatenate anndata) to perform classification
@@ -10,6 +12,8 @@ then apply a community classification (in situ clustering class)
 """
 
 #%%
+
+
 
 
 import os
@@ -25,7 +29,7 @@ from . import model
 from . import clustering
 #from unused_files.similarity_m import get_simialrity_matrix
 #from utils import data_processing as data_processing
-
+import pickle
 
 
 from pathlib import Path
@@ -37,6 +41,7 @@ __all__ = ["ComSegDict"]
 
 
 class ComSegDict():
+
     """
     As a dataset is often compose of many separated images. It is requiered to create many ComSeg graph of RNAs.
     besides, the in-situ clustering to identify the transcriptomic profile is more informative at the data scale.
@@ -53,6 +58,8 @@ class ComSegDict():
                  seed=None,
                  super_node_prior_keys="in_nucleus",
                  confidence_level=1,
+                 remove_self_node=True,
+                 eps_min_weight = 0.1
                  ):
 
         """
@@ -84,6 +91,7 @@ class ComSegDict():
         self.super_node_prior_keys = super_node_prior_keys
         self.confidence_level = confidence_level
         self.dict_img_name = {}
+        self.eps_min_weight = eps_min_weight
 
         ###
         ##
@@ -138,6 +146,16 @@ class ComSegDict():
     def __iter__(self):
         return iter(self.dict_img_name)
 
+    def save(self, file_name):
+        """save class as self.name.txt"""
+        #assert file_name[-4:] == '.txt', 'file_name must end with .txt'
+        with open(file_name, "wb") as file_:
+            pickle.dump(self.__dict__, file_, -1)
+
+    def load(self, file_name):
+        """try load self.name.txt"""
+        self.__dict__ = pickle.load(
+            open(file_name, "rb", -1))
 
     def concatenate_anndata(self):
         """
@@ -147,17 +165,30 @@ class ComSegDict():
         :return: anndata
         :rtype:  AnnData
         """
-        self.global_anndata = ad.concat([self[img].community_anndata for img in self
-                                      if str(type(self[img])) == "<class 'comseg.rst.model.ComSeg'>"])
-        self.global_anndata.obs["img_name"] =  np.concatenate([[img] * len(self[img].community_anndata) for img in self
-                                             if  str(type(self[img])) == "<class 'comseg.rst.model.ComSeg'>"])
+        if len(self) > 1:
+
+            self.global_anndata = ad.concat([self[img].community_anndata for img in self])
+            self.global_anndata.obs["img_name"] =  np.concatenate([[img] * len(self[img].community_anndata) for img in self])
+        else:
+            img_name  = list(self.dict_img_name.keys())[0]
+            self.global_anndata = self[img_name].community_anndata
+            if type(img_name) == type(''):
+                self.global_anndata.obs["img_name"] = [img_name] * len(self.global_anndata)
+            elif type(img_name) == type([]):
+                self.global_anndata.obs["img_name"] = img_name * len(self.global_anndata)
+
         return self.global_anndata
 
 
     ### compute in-situ vector
 
 
-    def compute_community_vector(self,):
+    def compute_community_vector(self,
+                                 k_nearest_neighbors=10,
+                                 distance_weight_mode = "exp",
+                                 weight_mode = "positive_eps",
+                                 select_only_positive_edges = False,
+                                 remove_self_node = True,):
         """
 
         for all the images in the dataset, this function creates a graph of RNAs
@@ -173,9 +204,11 @@ class ComSegDict():
                                          dict_scale=self.dataset.dict_scale,
                                          mean_cell_diameter=self.mean_cell_diameter,  # in micrometer
                                          dict_co_expression=self.dataset.dict_co_expression,
+                                         k_nearest_neighbors=k_nearest_neighbors,
+                                         eps_min_weight=self.eps_min_weight,
                                          )
-            comseg_m.create_graph(
-                                  )
+            comseg_m.create_graph(weight_mode = weight_mode)
+            self[img_name] = comseg_m
 
             #### COMMÛTE COMMUNITY OF RNA
 
@@ -185,6 +218,9 @@ class ComSegDict():
                 seed=self.seed,
                 super_node_prior_keys=self.super_node_prior_keys,
                 confidence_level=self.confidence_level,
+                distance_weight_mode=distance_weight_mode,
+                select_only_positive_edges = select_only_positive_edges,
+            remove_self_node = remove_self_node,
             )
             self[img_name] = comseg_m
 
@@ -251,7 +287,12 @@ class ComSegDict():
         self.in_situ_clustering = clustering.InSituClustering(anndata=self.global_anndata,
                                         selected_genes=self.global_anndata.var_names)
         ### APPLY NORMALIZATION
-        self.in_situ_clustering.compute_normalization_parameters()
+        if norm_vector:
+            self.in_situ_clustering.compute_normalization_parameters()
+        else:
+            self.in_situ_clustering.param_sctransform = None
+            self.in_situ_clustering.genes_to_take = [True] * len(self.in_situ_clustering.selected_genes)
+
         self.global_anndata = self.in_situ_clustering.cluster_rna_community(
                                                           size_commu_min=size_commu_min,
                                                           norm_vector=norm_vector,
@@ -266,7 +307,7 @@ class ComSegDict():
                                                         )
         self.in_situ_clustering.get_cluster_centroid(
             cluster_column_name=clustering_method,
-            agregation_mode="mean")
+            aggregation_mode="mean")
 
         if merge_cluster:
             self.in_situ_clustering.merge_cluster(nb_min_cluster=nb_min_cluster,
@@ -277,21 +318,23 @@ class ComSegDict():
 
         self.global_anndata = self.in_situ_clustering.anndata
         ### classify small community with cluster_centroid
+        if n_pcs > 0:
+            classify_mode = "pca"
+        else:
+            classify_mode = "euclidien"
         self.in_situ_clustering.classify_small_community(
-        size_commu_max = np.inf,
-        size_commu_min_classif = 0,
+        #size_commu_max = np.inf,
+        #size_commu_min_classif = 0,
         key_pred = self.clustering_method,
-        unorm_vector_key = "unorm_vector",
-        classify_mode = "pca",
-        min_correlation = 0,
+        #unorm_vector_key = "unorm_vector",
+        classify_mode = classify_mode,
+        #min_correlation = 0,
         min_proba_small_commu = 0,)
 
 
 
         ## add cluster to community of each images
         for img in self:
-            if str(type(self[img])) != "<class 'comseg.rst.model.ComSeg'>":
-                continue
             ## get the cluster list and the community index
             cluster_id_list = list(self.global_anndata[self.global_anndata.obs.img_name == img].obs[self.clustering_method])
             community_index_list = list(self.global_anndata[self.global_anndata.obs.img_name == img].obs.index_commu)
@@ -321,7 +364,7 @@ class ComSegDict():
         :return:
         """
         #todo use the method of the comseg instance
-        list_img = [img for img in self if str(type(self[img])) == "<class 'comseg.rst.model.ComSeg'>"]
+        list_img = [img for img in self]
         for img_name in list_img:
             list_index_commu = list(self[img_name].community_anndata.obs['index_commu'])
             list_cluster_id = list(self[img_name].community_anndata.obs[clustering_method])
@@ -375,8 +418,6 @@ class ComSegDict():
 
 
         for img_name in tqdm(self):
-            if str(type(self[img_name])) != "<class 'comseg.rst.model.ComSeg'>":
-                continue
             dict_cell_centroid = np.load(Path(path_dict_cell_centroid) / (img_name + file_extension), allow_pickle=True).item()
 
             self[img_name].classify_centroid(dict_cell_centroid,
@@ -396,7 +437,7 @@ class ComSegDict():
         key_pred="leiden_merged",
         super_node_prior_key='in_nucleus',
         distance='distance',
-        max_distance=100):
+        max_cell_radius=100):
         """
         Associate RNAs to landmarks based on the both transcriptomic landscape and the
         distance between the RNAs and the centroids of the landmark
@@ -413,14 +454,12 @@ class ComSegDict():
         """
 
         for img_name in tqdm(self):
-            if str(type(self[img_name])) != "<class 'comseg.rst.model.ComSeg'>":
-                continue
-
+            print(img_name)
             self[img_name].associate_rna2landmark(
                 key_pred=key_pred,
                 super_node_prior_key=super_node_prior_key,
                 distance=distance,
-                max_distance=max_distance)
+                max_cell_radius=max_cell_radius)
 
 
     #### return an anndata with expresion vector
@@ -447,8 +486,6 @@ class ComSegDict():
         dict_df_spots = {}
 
         for img_name in tqdm(self):
-            if str(type(self[img_name])) != "<class 'comseg.rst.model.ComSeg'>":
-                continue
             anndata = self[img_name].get_anndata_from_result(
                 key_cell_pred=key_cell_pred)
 

@@ -73,7 +73,6 @@ def _gen_graph(graph,
 
     for node1, node2, wt in graph.edges(data=True):
         if distance not in wt:
-
             if "gene" in graph.nodes[node1] or  "gene" in graph.nodes[node2]:
                 if "gene" in graph.nodes[node1]:
                     assert graph.nodes[node1]['gene'] == 'centroid'
@@ -92,7 +91,5 @@ def _gen_graph(graph,
                 H.add_edge(com1, com2, **{distance: wt})
         else:
             H.add_edge(com1, com2, **{distance: wt})
-        # temp = H.get_edge_data(com1, com2, {weight: 0})[weight]
-        # H.add_edge(com1, com2, **{"distance": wt + temp})
     return H
 

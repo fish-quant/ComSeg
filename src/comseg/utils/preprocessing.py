@@ -19,7 +19,8 @@ import pandas as pd
 import subprocess
 import sys
 import time
-
+import tifffile
+from skimage.measure import regionprops
 
 
 #from utils.seg_preprocessing import generate_dico_centroid
@@ -198,4 +199,48 @@ def select_genes_for_sct(vec = None,
     if bool_index.ndim == 2:
         bool_index = bool_index[0]
     return bool_index, np.array(genes)[bool_index]
+
+
+
+
+
+
+
+
+
+def generate_dico_centroid(path_to_mask):
+    if 'tif' == str(path_to_mask)[-3:]:
+        seg_mask = tifffile.imread(path_to_mask)
+    else:
+        seg_mask = np.load(path_to_mask)
+    seg_mask = seg_mask.astype('int')
+    dico_centroid = {}
+    props = regionprops(seg_mask)
+    for pp in props:
+        if len(pp.centroid) == 2:
+            dico_centroid[pp.label] = [[0, pp.centroid[0], pp.centroid[1]]]
+        else:
+            assert len(pp.centroid) == 3
+            dico_centroid[pp.label] = [pp.centroid]
+    return dico_centroid
+
+
+
+
+
+
+if __name__ == '__main__':
+
+    path_nuc_folder = Path('/media/tom/T7/regular_grid/simu1912/elbow_cube/remove20/nuclei_irregular')
+    path_folder_dico_centroid = "/media/tom/T7/regular_grid/simu1912/elbow_cube/remove20/dico_centroid_irregular"
+
+    for path_nuc in path_nuc_folder.glob('*.npy'):
+        dico_centroid = generate_dico_centroid(path_to_mask = path_nuc)
+
+        np.save(Path(path_folder_dico_centroid) / (path_nuc.stem + '.npy'), dico_centroid)
+
+
+
+
+
 

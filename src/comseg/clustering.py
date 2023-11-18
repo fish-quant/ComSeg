@@ -146,13 +146,13 @@ class InSituClustering():
                     anndata.X.toarray())
             new_selected_genes = self.norm_genes
         else:
-            count_matrix_anndata = self.anndata.X.toarray()
-            bool_index_row = [True] * len(self.anndata)
+            count_matrix_anndata = self.anndata[bool_index_row, : ].X.toarray()
+            #bool_index_row = [True] * len(self.anndata)
             new_selected_genes = self.selected_genes
 
         ## norm vector if needed
 
-
+        count_matrix_anndata = np.nan_to_num(count_matrix_anndata)
         adata = ad.AnnData(csr_matrix(count_matrix_anndata))
         adata.var["features"] = new_selected_genes
         adata.var_names = new_selected_genes
@@ -251,13 +251,13 @@ class InSituClustering():
         :param plot:
         :return:
         """
-
+        from scipy import cluster
         scrna_unique_clusters, scrna_centroids = (list(t) for t in zip(*sorted(
             zip(np.array(self.scrna_unique_clusters).astype(int), self.scrna_centroids))))
-        Z = scipy.cluster.hierarchy.linkage(scrna_centroids, metric="cosine")
+        Z = cluster.hierarchy.linkage(scrna_centroids, metric="cosine")
         if plot:
             fig = plt.figure(figsize=(15, 10))
-            dn = scipy.cluster.hierarchy.dendrogram(Z)
+            dn = cluster.hierarchy.dendrogram(Z)
             plt.show()
 
         array_label = np.array(self.anndata_cluster.obs[cluster_column_name]).astype(int)
@@ -299,6 +299,12 @@ class InSituClustering():
             new_list_ori_leiden.append(dico_ori_merge[cluster_id])
         self.anndata.obs[column_name] = new_list_ori_leiden
 
+        try:
+
+            print(f"number of cluster after merging {len(dico_merge_ori) }")
+        except:
+            print(" no merging done?")
+
         return self.anndata_cluster.obs[column_name]
 
     def classify_by_nn(self,
@@ -331,10 +337,14 @@ class InSituClustering():
             list_boll_nan = np.sum(np.isnan(norm_expression_vectors), axis=1) == 0
             projected_vect = pca_model.transform(norm_expression_vectors[list_boll_nan])
         else:
-            list_boll_nan = [True for i in range(len(norm_expression_vectors))]
-            projected_vect = norm_expression_vectors
-        proba = kn_neighb.predict_proba(projected_vect)
-        list_index_cluster_max = np.argmax(proba, axis=1)
+            list_boll_nan = np.sum(np.isnan(norm_expression_vectors), axis=1) == 0
+            projected_vect = norm_expression_vectors[list_boll_nan]
+        if len(projected_vect) > 0 and np.sum(list_boll_nan) != 0:
+            proba = kn_neighb.predict_proba(projected_vect)
+            list_index_cluster_max = np.argmax(proba, axis=1)
+        else:
+            assert np.sum(list_boll_nan) == 0
+
         ## apply a nn classifier
         list_pred_rna_seq = []
         decal_varr = 0
@@ -409,17 +419,22 @@ class InSituClustering():
             unclassified_vector = self.anndata[index_unclassified,
                                   self.genes_to_take].X.toarray()
 
-            ## classify unclassified community
-            norm_expression_vectors, proba, list_pred_rna_seq = self.classify_by_nn(
-                unclassified_vector,
-                pca_model,
-                kn_neighb,
-                min_proba=min_proba_small_commu,
-                param_sctransform=self.param_sctransform)
+            if len(unclassified_vector) > 0 and np.sum(unclassified_vector) > 0:
+                ## classify unclassified community
+                norm_expression_vectors, proba, list_pred_rna_seq = self.classify_by_nn(
+                    array_of_vect = unclassified_vector,
+                    pca_model = pca_model,
+                    kn_neighb =     kn_neighb,
+                    min_proba=min_proba_small_commu,
+                    param_sctransform=self.param_sctransform
+                )
 
-            list_pred_rna = np.array(self.anndata.obs['leiden_merged'])
-            list_pred_rna[index_unclassified] = list_pred_rna_seq
-            self.anndata.obs['leiden_merged'] = list_pred_rna
+                list_pred_rna = np.array(self.anndata.obs['leiden_merged'])
+                list_pred_rna[index_unclassified] = list_pred_rna_seq
+                self.anndata.obs['leiden_merged'] = list_pred_rna
+            else:
+                print("no small vector to classify")
+
 
             return self.anndata.obs['leiden_merged']
 

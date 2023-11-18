@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ComSegDict &mdash; ComSeg 0.1 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="In-situ clustering" href="clustering.html" />
+    <link rel="prev" title="Graph model" href="comseg.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            ComSeg
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../userguide.html">User guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../comseg.html">Module comseg</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="dataset.html">Dataset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="comseg.html">Graph model</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">ComSegDict</a></li>
+<li class="toctree-l2"><a class="reference internal" href="clustering.html">In-situ clustering</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ComSeg</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../comseg.html">Module comseg</a></li>
+      <li class="breadcrumb-item active">ComSegDict</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/comseg/comSegdict.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="comsegdict">
+<h1>ComSegDict<a class="headerlink" href="#comsegdict" title="Permalink to this headline"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="dictionary.ComSegDict">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dictionary.</span></span><span class="sig-name descname"><span class="pre">ComSegDict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mean_cell_diameter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clustering_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'louvain_with_prior'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_keys</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'in_nucleus'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">super_node_prior_keys</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'in_nucleus'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">confidence_level</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dictionary.ComSegDict" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>As a dataset is often compose of many separated images. It is requiered to create many ComSeg graph of RNAs.
+besides, the in-situ clustering to identify the transcriptomic profile is more informative at the data scale.
+To ease the analysis entire dataset we implement ComSegDict. It is a class that store many ComSeg object
+and allows to perform analysis at the dataset scale.</p>
+<p>This class is implemented as a dictionary of ComSeg graph object</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="dictionary.ComSegDict.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mean_cell_diameter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clustering_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'louvain_with_prior'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_keys</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'in_nucleus'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">super_node_prior_keys</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'in_nucleus'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">confidence_level</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dictionary.ComSegDict.__init__" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataset</strong> (<a class="reference internal" href="dataset.html#dataset.ComSegDataset" title="dataset.ComSegDataset"><em>ComSegDataset</em></a>) – </p></li>
+<li><p><strong>mean_cell_diameter</strong> (<em>float</em>) – the expected mean cell diameter in µm default is 15µm</p></li>
+<li><p><strong>clustering_method</strong> (<em>str</em>) – choose in [“with_prior”,  “louvain”], “with_prior” is our graph partioning / community
+detection method taking into account prior knowledge</p></li>
+<li><p><strong>prior_keys</strong> (<em>str</em>) – key of the prior cell assignment in the node attribute dictionary and in the input CSV file</p></li>
+<li><p><strong>seed</strong> (<em>int</em>) – (optional) seed for the grpah partioning initialization</p></li>
+<li><p><strong>super_node_prior_keys</strong> (<em>str</em>) – key of the prior cell assignment in the node attribute
+and in the input CSV file that is certain. node labeled with the same supernode prior key will be merged.
+prior_keys and super_node_prior_keys can be the different if two landmarks mask prior are available.
+exemple: super_node_prior_keys = “nucleus_landmak”, prior_keys = “uncertain_cell_landmark”</p></li>
+<li><p><strong>confidence_level</strong> (<em>float</em>) – confidence level for the prior knowledge (prior_keys) in the range [0,1]. 1 means that the prior knowledge is certain.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dictionary.ComSegDict.concatenate_anndata">
+<span class="sig-name descname"><span class="pre">concatenate_anndata</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dictionary.ComSegDict.concatenate_anndata" title="Permalink to this definition"></a></dt>
+<dd><p>concatenate all community expression vectors from all
+the ComSeg graphs into a single anndata object</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>anndata</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>AnnData</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dictionary.ComSegDict.compute_community_vector">
+<span class="sig-name descname"><span class="pre">compute_community_vector</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dictionary.ComSegDict.compute_community_vector" title="Permalink to this definition"></a></dt>
+<dd><p>for all the images in the dataset, this function creates a graph of RNAs
+and compute the community vectors</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>self</strong> – </p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dictionary.ComSegDict.compute_insitu_clustering">
+<span class="sig-name descname"><span class="pre">compute_insitu_clustering</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size_commu_min</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norm_vector</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_pcs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_comps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clustering_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'leiden'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_neighbors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resolution</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_clusters_kmeans</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">palette</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nb_min_cluster</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_merge_correlation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.8</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">merge_cluster</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dictionary.ComSegDict.compute_insitu_clustering" title="Permalink to this definition"></a></dt>
+<dd><p>Cluster all together  the RNA partition/community expression vector for all the images in the dataset and
+identify the single cell transcriptomic cluster present in the dataset</p>
+<p>#todo clean the name leiden vs leiden_merged aka clustering_method</p>
+<p>#todo or add the current cleuter name to use in the self so it is reuse in  add_cluster_id_to_graph</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>size_commu_min</strong> (<em>int</em>) – minimum number of RNA in a community to be considered for the clustering</p></li>
+<li><p><strong>norm_vector</strong> (<em>bool</em>) – if True, the expression vector will be normalized using the scTRANSFORM normalization parameters</p></li>
+<li><p><strong>n_pcs</strong> (<em>int</em>) – number of principal component to compute for the clustering; Lets 0 if no pca</p></li>
+<li><p><strong>n_comps</strong> (<em>int</em>) – number of components to compute for the clustering; Lets 0 if no pca</p></li>
+<li><p><strong>clustering_method</strong> (<em>str</em>) – choose in [“leiden”, “kmeans”, “louvain”]</p></li>
+<li><p><strong>n_neighbors</strong> (<em>int</em>) – number of neighbors similarity graph</p></li>
+<li><p><strong>resolution</strong> (<em>float</em>) – resolution parameter for the leiden/Louvain clustering</p></li>
+<li><p><strong>n_clusters_kmeans</strong> (<em>int</em>) – number of cluster for the kmeans clustering</p></li>
+<li><p><strong>palette</strong> (<em>list</em><em>[</em><em>str</em><em>]</em>) – color palette for the cluster list of (HEX) color</p></li>
+<li><p><strong>min_merge_correlation</strong> (<em>float</em>) – minimum correlation to merge cluster</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dictionary.ComSegDict.add_cluster_id_to_graph">
+<span class="sig-name descname"><span class="pre">add_cluster_id_to_graph</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">clustering_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'leiden_merged'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dictionary.ComSegDict.add_cluster_id_to_graph" title="Permalink to this definition"></a></dt>
+<dd><p>Add transcriptional cluster id to each RNA molecule in the graph</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>self</strong> – </p></li>
+<li><p><strong>clustering_method</strong> (<em>str</em>) – clustering method used to get the community (kmeans, leiden_merged, louvain)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dictionary.ComSegDict.classify_centroid">
+<span class="sig-name descname"><span class="pre">classify_centroid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path_dict_cell_centroid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_neighbors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">15</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dict_in_pixel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_dist_centroid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key_pred</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'leiden_merged'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'gaussian'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">convex_hull_centroid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_extension</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'tiff.npy'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dictionary.ComSegDict.classify_centroid" title="Permalink to this definition"></a></dt>
+<dd><p>Classify cell centroids based on their  centroid neighbors RNA
+label from <code class="docutils literal notranslate"><span class="pre">add_cluster_id_to_graph()</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path_dict_cell_centroid</strong> (<em>str</em>) – path to the folder containing the centroid dictionary {cell : {z:,y:,x:}}
+with each centroid dictionary in a file named as the image name and store in a npy format</p></li>
+<li><p><strong>n_neighbors</strong> (<em>int</em>) – number of neighbors to consider for the classification of the centroid (default 15)</p></li>
+<li><p><strong>dict_in_pixel</strong> (<em>bool</em>) – if True the centroid are in pixel and rescal if False the centroid are in um (default True)</p></li>
+<li><p><strong>max_dist_centroid</strong> (<em>int</em>) – maximum distance to consider for the centroid (default None)</p></li>
+<li><p><strong>key_pred</strong> (<em>str</em>) – key of the node attribute containing the cluster id (default “leiden_merged”)</p></li>
+<li><p><strong>convex_hull_centroid</strong> (<em>bool</em>) – check that cell centroid is in the convex hull of its RNA neighbors (default True). If not the cell centroid is not classify to avoid artefact misclassification</p></li>
+<li><p><strong>file_extension</strong> – file extension of the centroid dictionary</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dictionary.ComSegDict.associate_rna2landmark">
+<span class="sig-name descname"><span class="pre">associate_rna2landmark</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key_pred</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'leiden_merged'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">super_node_prior_key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'in_nucleus'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'distance'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_distance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dictionary.ComSegDict.associate_rna2landmark" title="Permalink to this definition"></a></dt>
+<dd><p>Associate RNAs to landmarks based on the both transcriptomic landscape and the
+distance between the RNAs and the centroids of the landmark</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key_pred</strong> (<em>str</em>) – key of the node attribute containing the cluster id (default “leiden_merged”)</p></li>
+<li><p><strong>super_node_prior_key</strong> (<em>str</em>) – </p></li>
+<li><p><strong>max_distance</strong> (<em>float</em>) – maximum distance between a cell centroid and an RNA to be associated (default 100)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dictionary.ComSegDict.anndata_from_comseg_result">
+<span class="sig-name descname"><span class="pre">anndata_from_comseg_result</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key_cell_pred</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'cell_index_pred'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dictionary.ComSegDict.anndata_from_comseg_result" title="Permalink to this definition"></a></dt>
+<dd><p>Return an anndata with the estimated expression vector of each cell in the dataset plus the spot positions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>self</strong> – </p></li>
+<li><p><strong>key_cell_pred</strong> – leave it to default</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="comseg.html" class="btn btn-neutral float-left" title="Graph model" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="clustering.html" class="btn btn-neutral float-right" title="In-situ clustering" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Thomas Defard.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

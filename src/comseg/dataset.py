@@ -63,7 +63,7 @@ class ComSegDataset():
             self.path_image_dict[image_path_df.stem] = image_path_df
             unique_gene += list(pd.read_csv(self.path_image_dict[image_path_df.stem]).gene.unique())
         if len(self.path_image_dict) == 0:
-            raise ValueError("no csv file found in the dataset folder")
+            raise ValueError(f"no csv file found in the dataset folder {self.path_dataset_folder}")
         self.list_index = list(self.path_image_dict.keys())
         self.selected_genes = np.unique(unique_gene)
         self.dict_scale = dict_scale
@@ -81,6 +81,13 @@ class ComSegDataset():
     def __iter__(self):
         for x in self.list_index :
             yield x
+
+    def __repr__(self):
+        return repr(f'dataset comseg  {self.list_index}')
+
+    def keys(self):
+        return self.list_index
+
 
 
     #### fct adding prior
@@ -134,7 +141,7 @@ class ComSegDataset():
                                       df_spots_label,
                                       n_neighbors=5,
                                       radius=5,
-                                      ):
+                                      remove_self_node = False):
 
 
         """
@@ -192,13 +199,16 @@ class ComSegDataset():
 
         list_expression_vec = []
         for node in list(G.nodes()):
-            vectors_gene = list(array_gene_indexed[list(G.successors(node))])
+            successors = set(list(G.successors(node)))
+            if remove_self_node:
+                successors.remove(node)
+            vectors_gene = list(array_gene_indexed[list(successors)])
             vector_distance = np.array([G[node][suc]['weight'] for suc in G.successors(node)])
             # vector_distance
             expression_vector = np.zeros(len(self.selected_genes))
             for str_gene_index in range(len(vectors_gene)):
                 str_gene = vectors_gene[str_gene_index]
-                expression_vector[gene_index_dico[str_gene]] += radius  - 1 *  vector_distance[str_gene_index]
+                expression_vector[gene_index_dico[str_gene]] += (radius  - 1 *  vector_distance[str_gene_index]) / radius
             list_expression_vec.append(expression_vector)
         count_matrix = np.array(list_expression_vec)
         return count_matrix
@@ -249,7 +259,8 @@ class ComSegDataset():
             distance="pearson",
             per_images=False,
             sampling=False,
-            sampling_size=100000):
+            sampling_size=100000,
+    remove_self_node = False):
 
         #print("adapt to when I prune")
 
@@ -286,7 +297,8 @@ class ComSegDataset():
             print("image name : ", image_name)
             count_matrix = self.count_matrix_in_situ_from_knn(df_spots_label=df_spots_label,  # df_spots_label,
                                                          n_neighbors=n_neighbors,
-                                                         radius=radius)
+                                                         radius=radius,
+                                                        remove_self_node=remove_self_node)
             list_of_count_matrix.append(count_matrix)
         if sampling:
             print("count_matrix.shape", count_matrix.shape)

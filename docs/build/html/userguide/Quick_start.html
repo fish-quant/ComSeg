@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ComSeg tutorial &mdash; ComSeg 0.1 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/nbsphinx-code-cells.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+        <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Module comseg" href="../comseg.html" />
+    <link rel="prev" title="User guide" href="../userguide.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            ComSeg
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../userguide.html">User guide</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">ComSeg tutorial</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#1)-dataset-initialization">1) dataset initialization</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#The-estimated-co-expression-correlation-matrix-between-gene-can-be-vizualised-as-folow">The estimated co-expression correlation matrix between gene can be vizualised as folow</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#2)-Create-a-graph-of-RNA-molecule-nodes-and-apply-graph-patitioning">2) Create a graph of RNA molecule nodes and apply graph patitioning</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#3)-In-situ-clustering">3) In-situ clustering</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#Plot-in-situ-clustering">Plot in-situ clustering</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Add-cluster-label-to-rna-nodes-of-graphs">Add cluster label to rna nodes of graphs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#transcriptomic-domain-map">transcriptomic domain map</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#4)-final-RNA-nuclei-association">4) final RNA-nuclei association</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#Classify-nucleus-centroids">Classify nucleus centroids</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#todo-add-a-vizualization-of-the-classify-nuclei">todo add a vizualization of the classify nuclei</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apply-dikstra">apply dikstra</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#plot-of-final-RNA-Nucleus-assignement">plot of final RNA-Nucleus assignement</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#OUTPUT-ANNDATA">OUTPUT ANNDATA</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Final-single-cell-clustering-from-the-anndata">Final single cell clustering from the anndata</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../comseg.html">Module comseg</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ComSeg</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../userguide.html">User guide</a></li>
+      <li class="breadcrumb-item active">ComSeg tutorial</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/userguide/Quick_start.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="ComSeg-tutorial">
+<h1>ComSeg tutorial<a class="headerlink" href="#ComSeg-tutorial" title="Permalink to this headline"></a></h1>
+<p>ComSeg is an algorithm to perform single cell spatial RNA profiling from FISH based spatial transcriptomic data. It takes as input a folder of CSV files containing the spots coordinates of each images and optionally folder of segmentation masks for each image. If landmark segmentation is not available cell centroid is enougth to apply ComSeg.</p>
+<p>This tutorial is orginized as follow:</p>
+<ul class="simple">
+<li><ol class="arabic simple">
+<li><p>Dataset initialization</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="2">
+<li><p>Create a graph of RNA molecule nodes and apply graph patitioning</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="3">
+<li><p>In-situ clustering</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="4">
+<li><p>final RNA-nuclei association</p></li>
+</ol>
+</li>
+</ul>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1">#### HYPERPARAMETER ####</span>
+<span class="n">MEAN_CELL_DIAMETER</span> <span class="o">=</span> <span class="mi">15</span>  <span class="c1"># in micrometer</span>
+<span class="n">MAX_CELL_LENGTH</span> <span class="o">=</span> <span class="mi">100</span>  <span class="c1"># in micrometer</span>
+<span class="c1">#########################</span>
+</pre></div>
+</div>
+</div>
+<p>the demo dataset can be download at :</p>
+<section id="1)-dataset-initialization">
+<h2>1) dataset initialization<a class="headerlink" href="#1)-dataset-initialization" title="Permalink to this headline"></a></h2>
+<p>The fisrt step is to create a comseg-dataset. This object will preprocess the spot coordinates of each image from csv file, add optional prior knowledge from landmark/staining and compute the co-expression correlation at the dataset scale. for now You need:</p>
+<ul class="simple">
+<li><p>A folder with spot coordinate csv file with the naming convention {image_name}.csv</p></li>
+<li><p>A folder with prior segmentation mask with the naming convention {image_name}.tiff</p></li>
+</ul>
+<p>In this tutorial we use nuclei segmentation. ComSeg work also without prior knowledge from segmentation</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">matplotlib</span>
+<span class="kn">import</span> <span class="nn">comseg</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">random</span>
+<span class="kn">import</span> <span class="nn">tifffile</span>
+<span class="kn">import</span> <span class="nn">importlib</span>
+<span class="kn">from</span> <span class="nn">comseg</span> <span class="kn">import</span> <span class="n">dataset</span> <span class="k">as</span> <span class="n">ds</span>
+<span class="kn">from</span> <span class="nn">comseg</span> <span class="kn">import</span> <span class="n">model</span>
+<span class="kn">from</span> <span class="nn">comseg</span> <span class="kn">import</span> <span class="n">dictionary</span>
+<span class="kn">import</span> <span class="nn">scanpy</span>
+<span class="o">%</span><span class="k">matplotlib</span> inline
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1">## path to your .csv spots coordinate folder</span>
+<span class="n">path_dataset_folder</span> <span class="o">=</span> <span class="s2">&quot;./demo/csv&quot;</span>
+
+
+<span class="c1">##path to your prior segmentation masks</span>
+<span class="n">path_to_mask_prior</span> <span class="o">=</span> <span class="s2">&quot;./demo/mask_nuclei&quot;</span>
+
+<span class="c1">## scale/ pixel size in um</span>
+<span class="n">dico_scale</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="mf">0.103</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="mf">0.103</span><span class="p">,</span> <span class="s2">&quot;z&quot;</span><span class="p">:</span> <span class="mf">0.3</span><span class="p">}</span>
+
+
+<span class="c1">### create the dataset object</span>
+<span class="n">dataset</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">ComSegDataset</span><span class="p">(</span>
+            <span class="n">path_dataset_folder</span> <span class="o">=</span> <span class="n">path_dataset_folder</span><span class="p">,</span>
+            <span class="n">path_to_mask_prior</span> <span class="o">=</span><span class="n">path_to_mask_prior</span><span class="p">,</span>
+            <span class="n">dict_scale</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="mf">0.103</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="mf">0.103</span><span class="p">,</span> <span class="s2">&quot;z&quot;</span><span class="p">:</span> <span class="mf">0.3</span><span class="p">},</span>
+            <span class="n">mask_file_extension</span> <span class="o">=</span> <span class="s2">&quot;.tiff&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<span class="c1">### add prior knowledge, here using nucleus segmentation mask</span>
+<span class="n">dataset</span><span class="o">.</span><span class="n">add_prior_from_mask</span><span class="p">(</span><span class="n">prior_keys_name</span> <span class="o">=</span> <span class="s1">&#39;in_nucleus&#39;</span><span class="p">,</span>  <span class="n">overwrite</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1">### compute the co-expression correlation at the dataset scale</span>
+<span class="n">dico_proba_edge</span><span class="p">,</span> <span class="n">count_matrix</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">compute_edge_weight</span><span class="p">(</span>  <span class="c1"># in micrometer</span>
+        <span class="n">images_subset</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">n_neighbors</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span>
+        <span class="n">radius</span><span class="o">=</span><span class="n">MEAN_CELL_DIAMETER</span><span class="o">/</span><span class="mi">4</span><span class="p">,</span>  <span class="c1"># in micormeter</span>
+        <span class="n">distance</span><span class="o">=</span><span class="s2">&quot;pearson&quot;</span><span class="p">,</span>
+        <span class="n">sampling</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">sampling_size</span><span class="o">=</span><span class="mi">100000</span>
+        <span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<section id="The-estimated-co-expression-correlation-matrix-between-gene-can-be-vizualised-as-folow">
+<h3>The estimated co-expression correlation matrix between gene can be vizualised as folow<a class="headerlink" href="#The-estimated-co-expression-correlation-matrix-between-gene-can-be-vizualised-as-folow" title="Permalink to this headline"></a></h3>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">seaborn</span> <span class="k">as</span> <span class="nn">sns</span>
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+<span class="n">corr_matrix</span> <span class="o">=</span> <span class="p">[]</span>
+
+<span class="k">for</span> <span class="n">gene0</span> <span class="ow">in</span>  <span class="n">dataset</span><span class="o">.</span><span class="n">dict_co_expression</span><span class="p">:</span>
+    <span class="n">list_corr_gene0</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">gene1</span> <span class="ow">in</span> <span class="n">dataset</span><span class="o">.</span><span class="n">dict_co_expression</span><span class="p">:</span>
+        <span class="n">list_corr_gene0</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">dict_co_expression</span><span class="p">[</span><span class="n">gene0</span><span class="p">][</span><span class="n">gene1</span><span class="p">])</span>
+    <span class="n">corr_matrix</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">list_corr_gene0</span><span class="p">)</span>
+<span class="n">list_gene</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">dict_co_expression</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+<span class="c1">#plotting the heatmap for correlation</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">sns</span><span class="o">.</span><span class="n">heatmap</span><span class="p">(</span><span class="n">corr_matrix</span><span class="p">,</span> <span class="n">xticklabels</span> <span class="o">=</span> <span class="n">list_gene</span><span class="p">,</span> <span class="n">yticklabels</span> <span class="o">=</span> <span class="n">list_gene</span><span class="p">,)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/userguide_Quick_start_9_0.png" src="../_images/userguide_Quick_start_9_0.png" />
+</div>
+</div>
+<p>The expression of C1qc, C1qa, C1qb is strongly positively correlated. It is an expected result as these three markers are all specificly express in interstitial macrophages.</p>
+</section>
+</section>
+<section id="2)-Create-a-graph-of-RNA-molecule-nodes-and-apply-graph-patitioning">
+<h2>2) Create a graph of RNA molecule nodes and apply graph patitioning<a class="headerlink" href="#2)-Create-a-graph-of-RNA-molecule-nodes-and-apply-graph-patitioning" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>We will use the previously computed co-expression score to weight a KNN of graph of RNA</p></li>
+<li><p>We well split this graph in communities i.e partitions of RNA. We then compute the transcriptomic profile of each community through a community expression vector with <code class="docutils literal notranslate"><span class="pre">compute_communty_vector()</span></code></p></li>
+</ul>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">Comsegdict</span> <span class="o">=</span> <span class="n">dictionary</span><span class="o">.</span><span class="n">ComSegDict</span><span class="p">(</span>
+                 <span class="n">dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">,</span>
+                 <span class="n">mean_cell_diameter</span><span class="o">=</span> <span class="n">MEAN_CELL_DIAMETER</span><span class="p">,</span>
+                 <span class="n">max_cell_length</span><span class="o">=</span><span class="n">MAX_CELL_LENGTH</span><span class="p">,</span>
+                 <span class="n">clustering_method</span><span class="o">=</span><span class="s2">&quot;louvain_with_prior&quot;</span><span class="p">,</span>
+                 <span class="n">weights_name</span><span class="o">=</span><span class="s2">&quot;weight&quot;</span><span class="p">,</span>
+                 <span class="n">prior_keys</span><span class="o">=</span><span class="s2">&quot;in_nucleus&quot;</span><span class="p">,</span>
+                 <span class="n">seed</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">super_node_prior_keys</span><span class="o">=</span><span class="s2">&quot;in_nucleus&quot;</span><span class="p">,</span>
+                 <span class="n">confidence_level</span><span class="o">=</span><span class="mi">1</span>
+<span class="p">)</span>
+
+
+<span class="n">Comsegdict</span><span class="o">.</span><span class="n">compute_communty_vector</span><span class="p">()</span>
+<br/></pre></div>
+</div>
+</div>
+</section>
+<section id="3)-In-situ-clustering">
+<h2>3) In-situ clustering<a class="headerlink" href="#3)-In-situ-clustering" title="Permalink to this headline"></a></h2>
+<p>In the previous step, we created a graph of RNA nodes and spits this graph into community of RNA.</p>
+<p>In this step we now extract the transcriptomic profil of all RNA partitions/communities and cluster them to estimate the different transciptomic profile present into the input datasets</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">Comsegdict</span><span class="o">.</span><span class="n">compute_insitu_clustering</span><span class="p">(</span>
+                                  <span class="n">size_commu_min</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+                                  <span class="n">norm_vector</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                  <span class="c1">### parameter clustering</span>
+                                  <span class="n">n_pcs</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+                                  <span class="n">n_comps</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+                                  <span class="n">clustering_method</span><span class="o">=</span><span class="s2">&quot;leiden&quot;</span><span class="p">,</span>
+                                  <span class="n">n_neighbors</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+                                  <span class="n">resolution</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                                  <span class="n">n_clusters_kmeans</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+                                  <span class="n">palette</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                  <span class="n">nb_min_cluster</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                                  <span class="n">min_merge_correlation</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span>
+                                  <span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<section id="Plot-in-situ-clustering">
+<h3>Plot in-situ clustering<a class="headerlink" href="#Plot-in-situ-clustering" title="Permalink to this headline"></a></h3>
+<p>In the following plot, one dot correspond to one community of RNA. Thank to ComSeg graph partitioning, we can indentify the different transcriptomic profiles present in the image dataset using solely the community expression vector and without assessing the single cell expression profile</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">scanpy</span> <span class="k">as</span> <span class="nn">sc</span>
+<span class="kn">import</span> <span class="nn">random</span>
+<span class="n">palette</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">500</span><span class="p">):</span>
+    <span class="n">palette</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;#&quot;</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="si">%06x</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mh">0xFFFFFF</span><span class="p">)</span>
+<span class="n">adata</span> <span class="o">=</span> <span class="n">Comsegdict</span><span class="o">.</span><span class="n">in_situ_clustering</span><span class="o">.</span><span class="n">anndata_cluster</span>
+<span class="n">adata</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="s2">&quot;leiden_merged&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">adata</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="s2">&quot;leiden_merged&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+<span class="n">sc</span><span class="o">.</span><span class="n">tl</span><span class="o">.</span><span class="n">umap</span><span class="p">(</span><span class="n">adata</span><span class="p">)</span>
+<span class="n">fig_ledien</span> <span class="o">=</span> <span class="n">sc</span><span class="o">.</span><span class="n">pl</span><span class="o">.</span><span class="n">umap</span><span class="p">(</span><span class="n">adata</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;leiden_merged&quot;</span><span class="p">],</span> <span class="n">palette</span><span class="o">=</span><span class="n">palette</span><span class="p">,</span> <span class="n">legend_loc</span><span class="o">=</span><span class="s1">&#39;on data&#39;</span><span class="p">,</span>
+                <span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/home/tom/anaconda3/envs/comseg_v0/lib/python3.8/site-packages/scanpy/plotting/_tools/scatterplots.py:391: UserWarning: No data for colormapping provided via &#39;c&#39;. Parameters &#39;cmap&#39; will be ignored
+  cax = scatter(
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/userguide_Quick_start_16_1.png" src="../_images/userguide_Quick_start_16_1.png" />
+</div>
+</div>
+</section>
+<section id="Add-cluster-label-to-rna-nodes-of-graphs">
+<h3>Add cluster label to rna nodes of graphs<a class="headerlink" href="#Add-cluster-label-to-rna-nodes-of-graphs" title="Permalink to this headline"></a></h3>
+<p>After this step, each node in the graph is labeled by the transcriptomic profile of the community it belongs to. Hence it is possible to plot a transcriptomic domain map showing not at the single cell level but at the tissue level the transcriptomic heterogenity</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">Comsegdict</span><span class="o">.</span><span class="n">add_cluster_id_to_graph</span><span class="p">(</span><span class="n">clustering_method</span> <span class="o">=</span> <span class="s2">&quot;leiden_merged&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="transcriptomic-domain-map">
+<h3>transcriptomic domain map<a class="headerlink" href="#transcriptomic-domain-map" title="Permalink to this headline"></a></h3>
+<p>In the following figure: - first plot: one color = one gene - second plot: One color = one transcriptomic profile define in the UMAP above</p>
+<p>The different colors in the second plot represent the diffenrent transcriptomic profile define in the “in-situ clustering” step. The second plot give an first approximation of the spatial position of the identified transcriptomic profile</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[46]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">importlib</span><span class="o">.</span><span class="n">reload</span><span class="p">(</span><span class="n">plot</span><span class="p">)</span>
+<span class="n">img_name</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">Comsegdict</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="mi">1</span><span class="p">]</span>
+<span class="kn">from</span> <span class="nn">comseg.utils</span> <span class="kn">import</span> <span class="n">plot</span>
+<span class="n">G</span> <span class="o">=</span> <span class="n">Comsegdict</span><span class="p">[</span><span class="n">img_name</span><span class="p">]</span><span class="o">.</span><span class="n">G</span>
+<span class="n">nuclei</span> <span class="o">=</span> <span class="n">tifffile</span><span class="o">.</span><span class="n">imread</span><span class="p">(</span>
+    <span class="sa">f</span><span class="s1">&#39;/media/tom/T7/simulation/test_set/mask/</span><span class="si">{</span><span class="n">img_name</span><span class="si">}</span><span class="s1">.tiff&#39;</span><span class="p">)</span>
+
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plot</span><span class="o">.</span><span class="n">plot_result</span><span class="p">(</span><span class="n">G</span><span class="o">=</span><span class="n">G</span><span class="p">,</span>
+            <span class="n">nuclei</span> <span class="o">=</span> <span class="n">nuclei</span><span class="p">,</span>
+               <span class="n">key_node</span> <span class="o">=</span> <span class="s1">&#39;gene&#39;</span><span class="p">,</span>
+                <span class="n">dico_cell_color</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span>
+                <span class="n">spots_size</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+                <span class="n">title</span>  <span class="o">=</span> <span class="s2">&quot;ONE COLOR = ONE GENE&quot;</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plot</span><span class="o">.</span><span class="n">plot_result</span><span class="p">(</span><span class="n">G</span><span class="o">=</span><span class="n">G</span><span class="p">,</span>
+            <span class="n">nuclei</span> <span class="o">=</span> <span class="n">nuclei</span><span class="p">,</span>
+               <span class="n">key_node</span> <span class="o">=</span> <span class="s1">&#39;leiden_merged&#39;</span><span class="p">,</span>
+                <span class="n">dico_cell_color</span> <span class="o">=</span> <span class="n">palette</span><span class="p">,</span>
+                <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span>
+                <span class="n">spots_size</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+                <span class="n">title</span>  <span class="o">=</span> <span class="s2">&quot;ONE COLOR = ONE TRANSCRIPTOMIC CLUSTER&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/userguide_Quick_start_20_0.png" src="../_images/userguide_Quick_start_20_0.png" />
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/userguide_Quick_start_20_1.png" src="../_images/userguide_Quick_start_20_1.png" />
+</div>
+</div>
+</section>
+</section>
+<section id="4)-final-RNA-nuclei-association">
+<h2>4) final RNA-nuclei association<a class="headerlink" href="#4)-final-RNA-nuclei-association" title="Permalink to this headline"></a></h2>
+<section id="Classify-nucleus-centroids">
+<h3>Classify nucleus centroids<a class="headerlink" href="#Classify-nucleus-centroids" title="Permalink to this headline"></a></h3>
+<p>We now classify each nucleus using the previously computed domain map. Each nucleus centroid is labeled by the most present transcriptomic profile in its neighborhood</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">Comsegdict</span><span class="o">.</span><span class="n">classify_centroid</span><span class="p">(</span>
+        <span class="n">path_dict_cell_centroid</span> <span class="o">=</span> <span class="s2">&quot;./demo/dico_centroid/&quot;</span><span class="p">,</span>
+          <span class="n">n_neighbors</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span>
+          <span class="n">dict_in_pixel</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+          <span class="n">max_dist_centroid</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+          <span class="n">key_pred</span><span class="o">=</span><span class="s2">&quot;leiden_merged&quot;</span><span class="p">,</span>
+          <span class="n">distance</span><span class="o">=</span><span class="s2">&quot;gaussian&quot;</span><span class="p">,</span>
+          <span class="n">convex_hull_centroid</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+          <span class="n">file_extension</span> <span class="o">=</span> <span class="s2">&quot;.tiff.npy&quot;</span>
+                        <span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="todo-add-a-vizualization-of-the-classify-nuclei">
+<h3>todo add a vizualization of the classify nuclei<a class="headerlink" href="#todo-add-a-vizualization-of-the-classify-nuclei" title="Permalink to this headline"></a></h3>
+</section>
+<section id="apply-dikstra">
+<h3>apply dikstra<a class="headerlink" href="#apply-dikstra" title="Permalink to this headline"></a></h3>
+<p>We now apply the dikstra algorithm to associate nucleus centroid to the neirest RNAs labeled by the same transcriptomic cluster.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">Comsegdict</span><span class="o">.</span><span class="n">associate_rna2landmark</span><span class="p">(</span>
+                         <span class="n">key_pred</span> <span class="o">=</span> <span class="s2">&quot;leiden_merged&quot;</span><span class="p">,</span>
+                         <span class="n">super_node_prior_key</span><span class="o">=</span><span class="s1">&#39;in_nucleus&#39;</span><span class="p">,</span>
+                         <span class="n">distance</span><span class="o">=</span><span class="s1">&#39;distance&#39;</span><span class="p">,</span>
+                         <span class="n">max_distance</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="plot-of-final-RNA-Nucleus-assignement">
+<h3>plot of final RNA-Nucleus assignement<a class="headerlink" href="#plot-of-final-RNA-Nucleus-assignement" title="Permalink to this headline"></a></h3>
+<p>In the following plot one color = one cell</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[30]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">importlib</span><span class="o">.</span><span class="n">reload</span><span class="p">(</span><span class="n">comseg</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">comseg.utils</span> <span class="kn">import</span> <span class="n">plot</span>
+<span class="n">importlib</span><span class="o">.</span><span class="n">reload</span><span class="p">(</span><span class="n">plot</span><span class="p">)</span>
+
+<span class="n">G</span> <span class="o">=</span> <span class="n">Comsegdict</span><span class="p">[</span><span class="n">img_name</span><span class="p">]</span><span class="o">.</span><span class="n">G</span>
+<span class="n">nuclei</span> <span class="o">=</span> <span class="n">tifffile</span><span class="o">.</span><span class="n">imread</span><span class="p">(</span>
+    <span class="sa">f</span><span class="s1">&#39;./demo/mask/</span><span class="si">{</span><span class="n">img_name</span><span class="si">}</span><span class="s1">.tiff&#39;</span><span class="p">)</span>
+
+<span class="n">plot</span><span class="o">.</span><span class="n">plot_result</span><span class="p">(</span><span class="n">G</span><span class="o">=</span><span class="n">G</span><span class="p">,</span>
+            <span class="n">nuclei</span> <span class="o">=</span> <span class="n">nuclei</span><span class="p">,</span>
+               <span class="n">key_node</span> <span class="o">=</span> <span class="s1">&#39;cell_index_pred&#39;</span><span class="p">,</span>
+                <span class="n">title</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">dico_cell_color</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">15</span><span class="p">),</span>
+                <span class="n">spots_size</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+                <span class="n">plot_outlier</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
+<br/></pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/userguide_Quick_start_27_0.png" src="../_images/userguide_Quick_start_27_0.png" />
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[30]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+(&lt;Figure size 1500x1500 with 1 Axes&gt;,
+ &lt;Axes: title={&#39;center&#39;: &#39;cell_index_pred&#39;}&gt;)
+</pre></div></div>
+</div>
+</section>
+<section id="OUTPUT-ANNDATA">
+<h3>OUTPUT ANNDATA<a class="headerlink" href="#OUTPUT-ANNDATA" title="Permalink to this headline"></a></h3>
+<p>the final output of this pipeline is an AnnData object so our model can be integrated into Scanpy/Scverse single cell workflow analysis. it contains for each cell an exppression vector, the cell centroid and the molecule coordinate associated to this cell.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">Comsegdict</span><span class="o">.</span><span class="n">anndata_from_comseg_result</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="Final-single-cell-clustering-from-the-anndata">
+<h3>Final single cell clustering from the anndata<a class="headerlink" href="#Final-single-cell-clustering-from-the-anndata" title="Permalink to this headline"></a></h3>
+<p>Comseg estimated the single cell RNA profile of each nucleus of the dataset. It is now possible to apply downstream task at the single cell level like clustering of the estimated transcriptomic profile as ploted below</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[53]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><br/><span></span><span class="n">adata</span> <span class="o">=</span> <span class="n">Comsegdict</span><span class="o">.</span><span class="n">final_anndata</span>
+<span class="c1">#sc.tl.pca(adata, svd_solver=&#39;arpack&#39;, n_comps = 0)</span>
+<span class="n">sc</span><span class="o">.</span><span class="n">pp</span><span class="o">.</span><span class="n">neighbors</span><span class="p">(</span><span class="n">adata</span><span class="p">,</span> <span class="n">n_neighbors</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">n_pcs</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">sc</span><span class="o">.</span><span class="n">tl</span><span class="o">.</span><span class="n">leiden</span><span class="p">(</span><span class="n">adata</span><span class="p">,</span>  <span class="n">resolution</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">sc</span><span class="o">.</span><span class="n">tl</span><span class="o">.</span><span class="n">umap</span><span class="p">(</span><span class="n">adata</span><span class="p">)</span>
+<span class="n">sc</span><span class="o">.</span><span class="n">pl</span><span class="o">.</span><span class="n">umap</span><span class="p">(</span><span class="n">adata</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;leiden&quot;</span><span class="p">],</span> <span class="n">palette</span><span class="o">=</span><span class="n">palette</span><span class="p">,</span> <span class="n">legend_loc</span><span class="o">=</span><span class="s1">&#39;on data&#39;</span><span class="p">)</span>
+<br/></pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/home/tom/anaconda3/envs/comseg_v0/lib/python3.8/site-packages/scanpy/plotting/_tools/scatterplots.py:391: UserWarning: No data for colormapping provided via &#39;c&#39;. Parameters &#39;cmap&#39; will be ignored
+  cax = scatter(
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/userguide_Quick_start_31_1.png" src="../_images/userguide_Quick_start_31_1.png" />
+</div>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../userguide.html" class="btn btn-neutral float-left" title="User guide" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../comseg.html" class="btn btn-neutral float-right" title="Module comseg" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Thomas Defard.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dataset &mdash; ComSeg 0.1 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Graph model" href="comseg.html" />
+    <link rel="prev" title="Module comseg" href="../comseg.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            ComSeg
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../userguide.html">User guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../comseg.html">Module comseg</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Dataset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="comseg.html">Graph model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="comSegdict.html">ComSegDict</a></li>
+<li class="toctree-l2"><a class="reference internal" href="clustering.html">In-situ clustering</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ComSeg</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../comseg.html">Module comseg</a></li>
+      <li class="breadcrumb-item active">Dataset</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/comseg/dataset.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="dataset">
+<h1>Dataset<a class="headerlink" href="#dataset" title="Permalink to this headline"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="dataset.ComSegDataset">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dataset.</span></span><span class="sig-name descname"><span class="pre">ComSegDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path_dataset_folder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path_to_mask_prior</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask_file_extension</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'.tiff'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dict_scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{'x':</span> <span class="pre">0.103,</span> <span class="pre">'y':</span> <span class="pre">0.103,</span> <span class="pre">'z':</span> <span class="pre">0.3}</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dataset.ComSegDataset" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>this class is in charge of :</p>
+<ol class="arabic simple">
+<li><p>loading the CSV input</p></li>
+<li><p>computation of the co-expression matrix at the dataset scale</p></li>
+<li><p>add prior knowledge if available</p></li>
+</ol>
+<p>The dataset class can be used like a dictionary of where the keys are the csv file names and the values are the csv</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="dataset.ComSegDataset.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path_dataset_folder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path_to_mask_prior</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask_file_extension</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'.tiff'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dict_scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{'x':</span> <span class="pre">0.103,</span> <span class="pre">'y':</span> <span class="pre">0.103,</span> <span class="pre">'z':</span> <span class="pre">0.3}</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dataset.ComSegDataset.__init__" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path_dataset_folder</strong> (<em>str</em>) – path to the folder containing the csv files</p></li>
+<li><p><strong>path_to_mask_prior</strong> (<em>str</em>) – path to the folder containing the mask priors. They must have the same name as the corresponding csv files</p></li>
+<li><p><strong>mask_file_extension</strong> – file extension of the mask priors</p></li>
+<li><p><strong>dict_scale</strong> (<em>dict</em>) – dictionary containing the pixel/voxel size of the images in µm default is {“x”: 0.103, ‘y’: 0.103, “z”: 0.3}</p></li>
+</ul>
+</dd>
+<dt class="field-even">Default mask_file_extension</dt>
+<dd class="field-even"><p>“.tiff”</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dataset.ComSegDataset.add_prior_from_mask">
+<span class="sig-name descname"><span class="pre">add_prior_from_mask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_keys_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'in_nucleus'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dataset.ComSegDataset.add_prior_from_mask" title="Permalink to this definition"></a></dt>
+<dd><p>This function add prior knowledge to the dataset. It adds a column in the csv files indicating prior label of each spot.
+It takes the positon of each spot and add the corresponding value of the mask prior at this position.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>prior_keys_name</strong> – name of the column to add in the csv files containing the prior label of each spot</p>
+</dd>
+</dl>
+<p>:type str
+:param overwrite: if True, overwrite the prior_keys_name column if it already exists
+:type bool
+:return: None</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dataset.ComSegDataset.count_matrix_in_situ_from_knn">
+<span class="sig-name descname"><span class="pre">count_matrix_in_situ_from_knn</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df_spots_label</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_neighbors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">radius</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dataset.ComSegDataset.count_matrix_in_situ_from_knn" title="Permalink to this definition"></a></dt>
+<dd><p>Compute the co-expression score matrix for the RNA spatial distribution</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df_spots_label</strong> (<em>pd.DataFrame</em>) – dataframe with the columns x,y,z,gene. the coordinates are rescaled in µm by dict_scale attribute of the dataset object</p></li>
+<li><p><strong>n_neighbors</strong> (<em>int</em>) – maximum number of neighbors default is 40</p></li>
+<li><p><strong>radius</strong> – maximum radius of neighbors. It should be set proportionnaly to expected cell size</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>count_matrix of shape (N_rna,  n_genes) where n_genes is the number of unique genes in df_spots_label</p>
+</dd>
+</dl>
+<p>each row is an ‘RNA expression vector’ summarizing local expression neighborhood of a molecule
+:rtype: np.array</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dataset.ComSegDataset.compute_edge_weight">
+<span class="sig-name descname"><span class="pre">compute_edge_weight</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">images_subset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_neighbors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">25</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">radius</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'pearson'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">per_images</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sampling</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sampling_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100000</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dataset.ComSegDataset.compute_edge_weight" title="Permalink to this definition"></a></dt>
+<dd><p>compute the gene co-expression correlation at the dataset scale</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dico_df_spots_label</strong> – </p></li>
+<li><p><strong>images_subset</strong> – </p></li>
+<li><p><strong>mode</strong> – </p></li>
+<li><p><strong>n_neighbors</strong> – </p></li>
+<li><p><strong>radius</strong> – </p></li>
+<li><p><strong>distance</strong> – </p></li>
+<li><p><strong>per_images</strong> – </p></li>
+<li><p><strong>sampling</strong> – </p></li>
+<li><p><strong>sampling_size</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>dico_proba_edge : a dictionary of dictionary correlation between genes. dict[gene_source][gene_target] = correlation</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>count_matrix : the count matrix used to compute the correlation</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>dict, np.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../comseg.html" class="btn btn-neutral float-left" title="Module comseg" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="comseg.html" class="btn btn-neutral float-right" title="Graph model" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Thomas Defard.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

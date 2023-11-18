@@ -68,7 +68,7 @@ class ComSegGraph():
                 mean_cell_diameter=15,  # in micrometer
                 k_nearest_neighbors = 10,
                 edge_max_length = None,
-                eps_min_weight =  None,
+                eps_min_weight =  0.1,
 
 
                  ):
@@ -76,8 +76,6 @@ class ComSegGraph():
 
 
         """
-
-
         :param df_spots_label: dataframe of the spots with column x,y,z, gene and optionally the prior label column
         :type df_spots_label: pd.DataFrame
         :param selected_genes: list of genes to consider
@@ -92,9 +90,6 @@ class ComSegGraph():
         :type edge_max_length: float
         :param eps_min_weight: minumum edge weigth default is 0.01
         :type eps_min_weight: float
-
-
-
         """
 
 
@@ -105,7 +100,7 @@ class ComSegGraph():
         self.k_nearest_neighbors = k_nearest_neighbors
         if edge_max_length is None:
             self.edge_max_length = mean_cell_diameter / 4
-        self.eps_min_weight = 1 / k_nearest_neighbors
+        self.eps_min_weight = eps_min_weight
         self.resolution = 1
         self.selected_genes = selected_genes
         self.gene_index_dict = {}
@@ -119,7 +114,7 @@ class ComSegGraph():
     ## create directed graph
 
     def create_graph(self,
-                     ):
+                     weight_mode = "positive"):
         """
         create the graph of the RNA nodes, all the graph generation parameters are set in the __init__ function
 
@@ -133,15 +128,15 @@ class ComSegGraph():
             print(e)
 
         if "z" in self.df_spots_label.columns:  ## you should do ZYX every where it is error prone, function to chenge : this one rna nuclei assoctioan
-            list_coordo_order_no_scaling = np.array([self.df_spots_label.x, self.df_spots_label.y, self.df_spots_label.z]).T
-            list_coordo_order = list_coordo_order_no_scaling * np.array([self.dict_scale['x'],
+            list_coordo_order_no_scaling = np.array([self.df_spots_label.z, self.df_spots_label.y, self.df_spots_label.x]).T
+            list_coordo_order = list_coordo_order_no_scaling * np.array([self.dict_scale['z'],
                                                                          self.dict_scale['y'],
-                                                                         self.dict_scale["z"]])
+                                                                         self.dict_scale["x"]])
         else:
             list_coordo_order_no_scaling = np.array([self.df_spots_label.x, self.df_spots_label.y]).T
-            list_coordo_order = list_coordo_order_no_scaling * np.array([self.dict_scale['x'], self.dict_scale['y']])
+            list_coordo_order = list_coordo_order_no_scaling * np.array([self.dict_scale['y'], self.dict_scale['x']])
         dico_list_features = {}
-        assert 'gene' in self.df_spots_label.columns
+        assert 'gene' in self.df_spots_label.columns, "the column gene is not in the dataframe"
         for feature in self.df_spots_label.columns:
                 dico_list_features[feature] = list(self.df_spots_label[feature])
         list_features = list(dico_list_features.keys())
@@ -172,8 +167,19 @@ class ComSegGraph():
             gene_source = G.nodes[edges[0]]['gene']
             gene_target = G.nodes[edges[1]]['gene']
             G.add_edge(edges[0], edges[1])
-            weight = np.max(self.dict_co_expression[gene_source][gene_target], 0) + self.eps_min_weight   ##
+            if weight_mode == "positive_eps":
+                weight = np.max([self.dict_co_expression[gene_source][gene_target], 0]) + self.eps_min_weight   ##
+            #weight = np.max([self.dict_co_expression[gene_source][gene_target],  self.eps_min_weight ])
+            elif weight_mode == "positive":
+                weight = np.max([self.dict_co_expression[gene_source][gene_target], 0])
+            elif weight_mode == "relative":
+                weight = self.dict_co_expression[gene_source][gene_target]
+            elif weight_mode == "original":
+                weight = self.dict_co_expression[gene_source][gene_target] + self.eps_min_weight
+            else:
+                raise ValueError(f"weight mode {weight_mode} not recognized")
             relative_weight = self.dict_co_expression[gene_source][gene_target]
+
             G[edges[0]][edges[1]]["weight"] = weight
             G[edges[0]][edges[1]]["relative_weight"] = relative_weight
             G[edges[0]][edges[1]]["distance"] = distance_list[edges_index]
@@ -194,16 +200,17 @@ class ComSegGraph():
                          seed=None,
                          super_node_prior_keys="in_nucleus",
                          confidence_level=1,
-                         # param for multigrpah leiden
-                         ):
+                         distance_weight_mode="exp",
+                         select_only_positive_edges = False,
+                         remove_self_node = True,):
+
+
         """
         Partition the graph into communities/sets of RNAs and computes and stores the "community expression vector"
          in the ``community_anndata`` class attribute
-
         :param clustering_method: choose in ["with_prior",  "louvain"], "with_prior" is our graph partitioning/community
                 detection method taking into account prior knowledge
         :type clustering_method: str
-
         :param prior_keys: key of the prior cell assignment in the node attribute dictionary and in the input CSV file
         :type prior_keys: str
         :param seed: (optional) seed for the grpah partioning initialization
@@ -226,7 +233,7 @@ class ComSegGraph():
         if super_node_prior_keys is not None:
             #print(f'creation of  super node with {super_node_prior_keys}')
             partition = []
-            assert clustering_method in ["with_prior"]
+            assert clustering_method in ["with_prior", "louvain"]
             list_nodes = np.array([index for index, data in self.G.nodes(data=True)])
 
             array_super_node_prior = np.array([data[super_node_prior_keys] for index, data in self.G.nodes(data=True)])
@@ -241,8 +248,14 @@ class ComSegGraph():
             partition = None
 
         assert nx.is_directed(self.G)
+        if  select_only_positive_edges:
+            G = self.G.copy()
+            G.remove_edges_from([(d[0], d[1]) for d in list(G.edges(data=True)) if d[2]["weight"] < 0])
+            print("only positive w selected")
+        else:
+            G = self.G.copy()
         if clustering_method == "louvain":
-            comm = nx_comm.louvain_communities(self.G.to_undirected(reciprocal=False),
+            comm = nx_comm.louvain_communities(G.to_undirected(reciprocal=False),
                                                weight="weight",
                                                resolution=self.resolution,
                                                seed=seed)
@@ -251,7 +264,7 @@ class ComSegGraph():
 
         if clustering_method == "with_prior":
             comm, final_graph = custom_louvain.louvain_communities(
-                    G=self.G.to_undirected(reciprocal=False),
+                    G=G.to_undirected(reciprocal=False),
                     weight="weight",
                     resolution=self.resolution,
                     threshold=0.0000001,
@@ -310,8 +323,9 @@ class ComSegGraph():
         self._estimation_density_vec(
                                # max_dist = 5,
                                key_word="kernel_vector",
-                               remove_self_node=True,
-                               norm_gauss=True)
+                               remove_self_node=remove_self_node,
+                               norm_gauss=False,
+                                distance_weight_mode =distance_weight_mode)
 
         return self.community_anndata
 
@@ -349,7 +363,8 @@ class ComSegGraph():
                                #max_dist = 5,
                                 key_word = "kernel_vector",
                                remove_self_node = True,
-                               norm_gauss = False):
+                               norm_gauss = False,
+                                distance_weight_mode = "exp"):
         import numpy as np
         import scipy.spatial as spatial
         def normal_dist(x, mean, sd, norm_gauss=False):  # copy from knn_to_count
@@ -360,8 +375,16 @@ class ComSegGraph():
                 prob_density = np.exp(-0.5 * ((x - mean) / sd) ** 2)
             return prob_density
         point_tree = spatial.cKDTree(self.list_coordo_order)
-        list_nn = point_tree.query_ball_point(self.list_coordo_order, self.agg_max_dist)
+        if distance_weight_mode == "exp":
+            list_nn = point_tree.query_ball_point(self.list_coordo_order, self.agg_max_dist )
+        if distance_weight_mode == "linear":
+            list_nn = point_tree.query_ball_point(self.list_coordo_order,self.edge_max_length)
         for node_index, node_data in self.G.nodes(data=True): ## create a kernel density estimation for each node
+            if distance_weight_mode == "None":
+                nn_expression_vector = np.zeros(len(self.selected_genes))
+                nn_expression_vector[self.gene_index_dict[self.G.nodes[node_index]["gene"]]] = 1
+                self.G.nodes[node_index][key_word] = np.ones(len(self.selected_genes))
+                continue
             if node_data["gene"] == 'centroid':
                 continue
             if remove_self_node:
@@ -370,13 +393,17 @@ class ComSegGraph():
             array_distance = spatial.distance.cdist([self.list_coordo_order[node_index]],
                                                     self.list_coordo_order[list_nn_node_index],
                                                     'euclidean')
-            array_normal_distance = normal_dist(array_distance[0],
-                                                mean=0,
-                                                sd=self.agg_sd,
-                                                norm_gauss = norm_gauss)
+
+            if distance_weight_mode == "exp":
+                distance_weights = normal_dist(array_distance[0],
+                                                    mean=0,
+                                                    sd=self.agg_sd,
+                                                    norm_gauss = norm_gauss)
+            if distance_weight_mode == "linear":
+                distance_weights = (self.edge_max_length - array_distance[0]) / self.edge_max_length
             ## add code to remove centroid but there is no centroid in list coordo ?
             nn_expression_vector = np.bincount([self.gene_index_dict[self.G.nodes[node_nn]["gene"]] for node_nn in list_nn_node_index],
-                                               weights=array_normal_distance,
+                                               weights=distance_weights,
                                                minlength=len(self.gene_index_dict))
             self.G.nodes[node_index][key_word] = nn_expression_vector
         ## to factorize with community_nn_message_passing_agg
@@ -385,13 +412,14 @@ class ComSegGraph():
             nn_expression_vector = np.zeros(len(self.gene_index_dict))
             for node in self.community_anndata.obs["node_index"][comm_index]:
                 nn_expression_vector += self.G.nodes[node][key_word]
+            nn_expression_vector = nn_expression_vector / len(self.community_anndata.obs["node_index"][comm_index])
             list_expression_vectors.append(nn_expression_vector)
         count_matrix_anndata = np.array(list_expression_vectors)
         anndata = ad.AnnData(csr_matrix(count_matrix_anndata))
         anndata.var["features"] = self.selected_genes
         anndata.var_names = self.selected_genes
         anndata.obs["list_coord"] =  self.community_anndata.obs["list_coord"]
-        anndata.obs["node_index"] = self.community_anndata.obs["prior"]
+        anndata.obs["node_index"] = self.community_anndata.obs["node_index"]
         anndata.obs["prior"] = self.community_anndata.obs["prior"]
         anndata.obs["index_commu"] = self.community_anndata.obs["index_commu"]
         anndata.obs["nb_rna"] = np.asarray((np.sum(self.community_anndata.X, axis = 1).astype(int)))
@@ -435,7 +463,7 @@ class ComSegGraph():
                           dict_in_pixel = True,
                           max_dist_centroid = None,
                           key_pred = "leiden_merged",
-                          distance = "gaussian",
+                          distance = "ngb_distance_weights",
                           convex_hull_centroid = True,
                           ):
         """
@@ -468,11 +496,14 @@ class ComSegGraph():
             list_coordo_order_nuc_centroid_no_scaling = []
             list_coordo_order_nuc_centroid = []
             for nuc in self.dict_cell_centroid:
-                centroid_pix = np.array(self.dict_cell_centroid[nuc][0])
-                centroid_um = centroid_pix * np.array([self.dict_scale['x'],
+                if len(self.dict_cell_centroid[nuc]) == 1:
+                    centroid_pix = np.array(self.dict_cell_centroid[nuc][0]) ## to clean, in case of old version of dict
+                else:
+                    assert len(self.dict_cell_centroid[nuc]) == len(self.list_coordo_order[0])
+                    centroid_pix = self.dict_cell_centroid[nuc]
+                centroid_um = centroid_pix * np.array([self.dict_scale['z'],
                                                                          self.dict_scale['y'],
-                                                                         self.dict_scale["z"]]) ## it is a bit wierd to altern [x,y,z] for spots list
-                                                                                        # with  [z,y,x] for images
+                                                                         self.dict_scale["x"]])
                 list_coordo_order_nuc_centroid_no_scaling.append(centroid_pix)
                 list_coordo_order_nuc_centroid.append(centroid_um)
         else:
@@ -496,6 +527,7 @@ class ComSegGraph():
             dico_nuclei_centroid[nuc]['z'] = centroid[self.dico_xyz_index["z"]]
             dico_nuclei_centroid[nuc]['y'] = centroid[self.dico_xyz_index["y"]]
             dico_nuclei_centroid[nuc]['x'] = centroid[self.dico_xyz_index["x"]]
+
             dico_nuclei_centroid[nuc]["type_list"] = []
             dico_nuclei_centroid[nuc]["gr_type_list"] = []
             dico_nuclei_centroid[nuc]["ngb_distance"] = []
@@ -547,8 +579,8 @@ class ComSegGraph():
                     if np.sum(invalid_dim) == 1:
                         assert invalid_dim[2] == 1
                         try:
-                            convex_hull = Delaunay(list_coordo_order[index_type_list][:, :2])
-                            is_valid_cv = convex_hull.find_simplex([dico_nuclei_centroid[nuc]['centroid_um'][:2]])[
+                            convex_hull = Delaunay(list_coordo_order[index_type_list][:, 1:])
+                            is_valid_cv = convex_hull.find_simplex([[dico_nuclei_centroid[nuc]['y'], dico_nuclei_centroid[nuc]['x']]])[
                                               0] >= 0
                         except Exception as e:
                             print(e)
@@ -557,9 +589,9 @@ class ComSegGraph():
                     else:
                         # convex_hull = Delaunay(list_coordo_order[index_type_list])
                         try:
-                            convex_hull = Delaunay(list_coordo_order[index_type_list][:, :2])
+                            convex_hull = Delaunay(list_coordo_order[index_type_list][:, 1:])
                             is_valid_cv = convex_hull.find_simplex(
-                                [dico_nuclei_centroid[nuc]['centroid_um'][:2]])[0] >= 0
+                                [[dico_nuclei_centroid[nuc]['y'], dico_nuclei_centroid[nuc]['x']]])[0] >= 0
                         except Exception as e:
                             print(e)
                             is_valid_cv = False
@@ -589,7 +621,7 @@ class ComSegGraph():
                          key_pred = "leiden_merged",
                          super_node_prior_key='in_nucleus',
                          distance='distance',
-                         max_distance=100):
+                         max_cell_radius=100):
 
         """
 
@@ -619,7 +651,7 @@ class ComSegGraph():
         G_merge, dico_expression_m_merge = self._associate_rna2landmark(
             G=G_merge,
             distance=distance,
-            max_distance=max_distance,
+            max_cell_radius=max_cell_radius,
         )
         for super_node_index in G_merge.nodes():
             set_super_nodes = G_merge.nodes[super_node_index]['nodes']
@@ -630,7 +662,7 @@ class ComSegGraph():
     def _associate_rna2landmark(self,
             G,
             distance='distance',
-            max_distance=100,  ## in theunit of the graph distance ie um
+            max_cell_radius=100,  ## in theunit of the graph distance ie um
     ):
 
         """
@@ -642,9 +674,7 @@ class ComSegGraph():
         df_spots_label :
         scrna_unique_clusters : scrna_unique_clusters from in situ clustering
         Returns
-        -------
-
-
+        ----------
         """
 
         #print(f'max distance is {max_distance}')
@@ -672,8 +702,13 @@ class ComSegGraph():
                 # print(f'nb node in cc {len(cc)}')
                 if len(set(centroid_list).intersection(cc)) == 1:
                     nucleus_node = list(set(centroid_list).intersection(cc))[0]
-                    dico_expression_m[nucleus_node] = list(cc)
-                    find += len(list(cc))
+                    length, path = nx.single_source_dijkstra(G.subgraph(cc).to_undirected(),
+                                                             nucleus_node,
+                                                             weight=distance,
+                                                             cutoff=max_cell_radius)
+
+                    dico_expression_m[nucleus_node] = list(length.keys())
+                    find += len(list(length.keys()))
                 if len(set(centroid_list).intersection(cc)) > 1:
                     # break
                     list_nuclei = list(set(centroid_list).intersection(cc))
@@ -686,7 +721,7 @@ class ComSegGraph():
                         length, path = nx.single_source_dijkstra(G.subgraph(cc).to_undirected(),
                                                                  nucleus_node,
                                                                  weight=distance,
-                                                                 cutoff=max_distance)
+                                                                 cutoff=max_cell_radius)
                         dico_length[nucleus_node] = length
                         dico_shortest_path[nucleus_node] = path
                     dico_nodes_centroid_distance = {}
@@ -824,7 +859,18 @@ class ComSegGraph():
 
 
 
+if False:
 
+    path_dict_centroid_not_mean = "/media/tom/T7/regular_grid/simu1912/cube2D_step100/dico_centroid_not_mean/"
+    path_dico_mean_centroid = "/media/tom/T7/regular_grid/simu1912/cube2D_step100/dico_centroid/"
+
+    for path_dict in Path(path_dict_centroid_not_mean).glob("*.npy"):
+
+        dict_centroid = np.load(path_dict, allow_pickle=True).item()
+        dict_centroid_mean = {}
+        for cell in dict_centroid:
+            dict_centroid_mean[cell] = np.mean(dict_centroid[cell], axis=0)
+        np.save(path_dico_mean_centroid + path_dict.name, dict_centroid_mean)
 
 
 

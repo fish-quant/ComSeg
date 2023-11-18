@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>In-situ clustering &mdash; ComSeg 0.1 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="ComSegDict" href="comSegdict.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            ComSeg
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../userguide.html">User guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../comseg.html">Module comseg</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="dataset.html">Dataset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="comseg.html">Graph model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="comSegdict.html">ComSegDict</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">In-situ clustering</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ComSeg</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../comseg.html">Module comseg</a></li>
+      <li class="breadcrumb-item active">In-situ clustering</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/comseg/clustering.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="in-situ-clustering">
+<h1>In-situ clustering<a class="headerlink" href="#in-situ-clustering" title="Permalink to this headline"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="clustering.InSituClustering">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">clustering.</span></span><span class="sig-name descname"><span class="pre">InSituClustering</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">anndata</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">selected_genes</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#clustering.InSituClustering" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>In situ clustering class takes as attribute an anndata object containing the community expression vectors
+of RNA partitions/communities from one or many images. This class is in charge of identifying the single cell transcriptomic
+clusters present in the dataset.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="clustering.InSituClustering.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">anndata</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">selected_genes</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#clustering.InSituClustering.__init__" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>anndata</strong> (<em>anndata object</em>) – anndata object containing the expression vector of the community.
+The anndata can be the concatenation of several anndata object from different ComSeg instance</p></li>
+<li><p><strong>selected_genes</strong> (<em>list</em><em>[</em><em>str</em><em>]</em>) – list of genes to take into account for the clustering
+the gene list order will define the order of the gene in the expression vector</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="clustering.InSituClustering.compute_normalization_parameters">
+<span class="sig-name descname"><span class="pre">compute_normalization_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">debug_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#clustering.InSituClustering.compute_normalization_parameters" title="Permalink to this definition"></a></dt>
+<dd><p>Compute the ScTransform normalization parameters from the class attribute anndata</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>debug_path</strong> – </p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="clustering.InSituClustering.cluster_rna_community">
+<span class="sig-name descname"><span class="pre">cluster_rna_community</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size_commu_min</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norm_vector</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_pcs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">15</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_comps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">15</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clustering_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'leiden'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_neighbors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resolution</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_clusters_kmeans</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">palette</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_umap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#clustering.InSituClustering.cluster_rna_community" title="Permalink to this definition"></a></dt>
+<dd><p>Cluster the RNA partition/community expression vector to identify the single cell transcriptomic cluster present in the dataset</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>size_commu_min</strong> (<em>int</em>) – minimum number of RNA in a community to be considered for the clustering</p></li>
+<li><p><strong>norm_vector</strong> (<em>bool</em>) – if True, the expression vector will be normalized using the scTRANSFORM normalization parameters</p></li>
+<li><p><strong>n_pcs</strong> (<em>int</em>) – number of principal component to compute for the clustering; Lets 0 if no pca</p></li>
+<li><p><strong>n_comps</strong> (<em>int</em>) – number of components to compute for the clustering; Lets 0 if no pca</p></li>
+<li><p><strong>clustering_method</strong> (<em>str</em>) – choose in [“leiden”, “kmeans”, “louvain”]</p></li>
+<li><p><strong>n_neighbors</strong> (<em>int</em>) – number of neighbors similarity graph</p></li>
+<li><p><strong>resolution</strong> (<em>float</em>) – resolution parameter for the leiden/Louvain clustering</p></li>
+<li><p><strong>n_clusters_kmeans</strong> – number of cluster for the kmeans clustering</p></li>
+<li><p><strong>palette</strong> (<em>list</em><em>[</em><em>str</em><em>]</em>) – color palette for the cluster list of (HEX) color</p></li>
+<li><p><strong>plot_umap</strong> – if True, plot the umap of the cluster</p></li>
+</ul>
+</dd>
+<dt class="field-even">Rtype n_clusters_kmeans</dt>
+<dd class="field-even"><p>int</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="clustering.InSituClustering.merge_cluster">
+<span class="sig-name descname"><span class="pre">merge_cluster</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nb_min_cluster</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_merge_correlation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.8</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cluster_column_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'leiden'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#clustering.InSituClustering.merge_cluster" title="Permalink to this definition"></a></dt>
+<dd><p>Merge clusters based on the correlation of their centroid</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>nb_min_cluster</strong> (<em>int</em>) – minimum number of clusters to merge</p></li>
+<li><p><strong>min_merge_correlation</strong> (<em>float</em>) – minimum correlation to merge clusters</p></li>
+<li><p><strong>cluster_column_name</strong> (<em>str</em>) – clustering method used</p></li>
+<li><p><strong>plot</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="clustering.InSituClustering.classify_small_community">
+<span class="sig-name descname"><span class="pre">classify_small_community</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key_pred</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'leiden_merged'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">classify_mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'pca'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_proba_small_commu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#clustering.InSituClustering.classify_small_community" title="Permalink to this definition"></a></dt>
+<dd><p>associate unclassified RNA community expression vector by using a knn classifier
+and the already classify communities</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key_pred</strong> – leave default</p></li>
+<li><p><strong>unorm_vector_key</strong> – leave default</p></li>
+<li><p><strong>classify_mode</strong> – choose in ‘pca’ or ‘euclidien’. it either uses the euclidian space or PCA space</p></li>
+<li><p><strong>min_proba_small_commu</strong> – minimum probability to classify a small community based on the KNN classifier</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="comSegdict.html" class="btn btn-neutral float-left" title="ComSegDict" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Thomas Defard.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
