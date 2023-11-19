@@ -47,7 +47,6 @@ class InSituClustering():
         self.selected_genes = selected_genes
         self.anndata_cluster = None ## contain the expression vector of the cluster commu ie more than x RNA
 
-
     def compute_normalization_parameters(self,
                                          debug_path = None):
         """

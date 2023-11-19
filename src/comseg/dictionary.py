@@ -4,12 +4,8 @@
 
 #todo add dataset to zenodo
 # todo add function to compute centroid of cell in a df format + harmonize with the rest of the code
-#
-"""
-class set store the graph and anndata of the comseg.rst(s) object
-preprocess it (like concatenate anndata) to perform classification
-then apply a community classification (in situ clustering class)
-"""
+# update tutorial
+
 
 #%%
 
@@ -41,21 +37,19 @@ __all__ = ["ComSegDict"]
 class ComSegDict():
 
     """
-    As a dataset is often composed of many separated images. It is requiered to create many ComSeg graph of RNAs.
-    To ease the analysis entire dataset, we implement ComSegDict. It is a class that store many ComSeg object
+    As a dataset is often composed of many separated images. It is required to create many ComSeg graphs of RNAs.
+    To ease the analysis of entire dataset, we implement ComSegDict. It is a class that store many ComSeg object
     and allows to perform analysis at the dataset scale.
     This class is implemented as a dictionary of ComSeg graph object
     """
 
-    def __init__(self, dataset=None,
+    def __init__(self,
+                 dataset=None,
                  mean_cell_diameter= None,
                  clustering_method="louvain_with_prior",
-                 prior_keys="in_nucleus",
                  seed=None,
-                 super_node_prior_keys="in_nucleus",
+                 prior_name="in_nucleus",
                  confidence_level=1,
-                 remove_self_node=True,
-                 eps_min_weight = 0.1
                  ):
 
         """
@@ -66,28 +60,22 @@ class ComSegDict():
         :param clustering_method: choose in ["with_prior",  "louvain"], "with_prior" is our graph partioning / community
                 detection method taking into account prior knowledge
         :type clustering_method: str
-        :param prior_keys: key of the prior cell assignment in the node attribute dictionary and in the input CSV file
-        :type prior_keys: str
-        :param seed: (optional) seed for the grpah partioning initialization
+        :param seed: (optional) seed for the graph partioning initialization
         :type seed: int
-        :param super_node_prior_keys: key of the prior cell assignment in the node attribute
-             and in the input CSV file that is certain. node labeled with the same supernode prior key will be merged.
-             prior_keys and super_node_prior_keys can be the different if two landmarks mask prior are available.
-             exemple: super_node_prior_keys = "nucleus_landmak", prior_keys = "uncertain_cell_landmark"
-        :type super_node_prior_keys: str
-        :param confidence_level: confidence level for the prior knowledge (prior_keys) in the range [0,1]. 1 means that the prior knowledge is certain.
+        :param prior_name: (optional) Name of the prior cell assignment column the input CSV file. Node with the same prior label will be merged into a super node.
+        node with different prior label can not be merged during the modularity optimization.
+        :type prior_name: str
+        :param confidence_level: (experimental) confidence level for the prior knowledge (prior_name) in the range [0,1]. 1 means that the prior knowledge is certain.
         :type confidence_level: float
         """
 
         self.dataset = dataset
         self.mean_cell_diameter = mean_cell_diameter
         self.clustering_method = clustering_method
-        self.prior_keys = prior_keys
         self.seed = seed
-        self.super_node_prior_keys = super_node_prior_keys
+        self.prior_name = prior_name
         self.confidence_level = confidence_level
         self.dict_img_name = {}
-        self.eps_min_weight = eps_min_weight
 
         ###
         ##
@@ -199,7 +187,6 @@ class ComSegDict():
                                          mean_cell_diameter=self.mean_cell_diameter,  # in micrometer
                                          dict_co_expression=self.dataset.dict_co_expression,
                                          k_nearest_neighbors=k_nearest_neighbors,
-                                         eps_min_weight=self.eps_min_weight,
                                          )
             comseg_m.create_graph()
             self[img_name] = comseg_m
@@ -208,13 +195,12 @@ class ComSegDict():
 
             comseg_m.community_vector(
                 clustering_method=self.clustering_method,
-                prior_keys=self.prior_keys,
                 seed=self.seed,
-                super_node_prior_keys=self.super_node_prior_keys,
+                prior_name=self.prior_name,
                 confidence_level=self.confidence_level,
                 select_only_positive_edges = select_only_positive_edges,
                 remove_self_node = remove_self_node,
-            )
+                )
             self[img_name] = comseg_m
 
 
@@ -316,12 +302,8 @@ class ComSegDict():
         else:
             classify_mode = "euclidien"
         self.in_situ_clustering.classify_small_community(
-        #size_commu_max = np.inf,
-        #size_commu_min_classif = 0,
         key_pred = self.clustering_method,
-        #unorm_vector_key = "unorm_vector",
         classify_mode = classify_mode,
-        #min_correlation = 0,
         min_proba_small_commu = 0,)
 
 
@@ -361,16 +343,16 @@ class ComSegDict():
         for img_name in list_img:
             list_index_commu = list(self[img_name].community_anndata.obs['index_commu'])
             list_cluster_id = list(self[img_name].community_anndata.obs[clustering_method])
+
             ## get a dico {commu : cluster ID}
             dico_commu_cluster = {}
             for commu_index in range(len(list_index_commu)):
                 dico_commu_cluster[list_index_commu[commu_index]] = list_cluster_id[commu_index]
-            G = self[img_name].G
-            for node in tqdm(G.nodes()):
-                if G.nodes[node]['gene'] == 'centroid':
-                    continue
-                G.nodes[node][clustering_method] = str(dico_commu_cluster[G.nodes[node]['index_commu']])
-            self[img_name].G = G
+
+            self[img_name].add_cluster_id_to_graph(
+                                    dict_cluster_id = dico_commu_cluster,
+                                    clustering_method="with_prior")
+
         return self
 
 

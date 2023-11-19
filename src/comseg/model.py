@@ -64,7 +64,6 @@ class ComSegGraph():
                 mean_cell_diameter=15,  # in micrometer
                 k_nearest_neighbors = 10,
                 edge_max_length = None,
-                eps_min_weight =  0,
                  ):
 
 
@@ -92,7 +91,6 @@ class ComSegGraph():
         self.k_nearest_neighbors = k_nearest_neighbors
         if edge_max_length is None:
             self.edge_max_length = mean_cell_diameter / 4
-        self.eps_min_weight = eps_min_weight
         self.resolution = 1
         self.selected_genes = selected_genes
         self.gene_index_dict = {}
