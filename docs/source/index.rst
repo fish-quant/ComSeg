@@ -9,6 +9,7 @@ ComSeg is an algorithm for single cell spatial RNA profiling in image-based tran
 
 It takes as input  csv files with the spot coordinates and output an anndata object with the genes expression and coordinates of each cell.
 It can leverage the information of the cell nuclei to improve the accuracy of the segmentation / RNA profiling.
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
@@ -57,6 +58,19 @@ alternatively you can clone the github repository `Github repository <https://gi
 
 ------------
 
+
+------------
+
+API reference
+*************
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Contents:
+
+   userguide
+   comseg
+------------
 
 
 Support
