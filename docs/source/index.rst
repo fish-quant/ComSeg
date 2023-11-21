@@ -62,7 +62,7 @@ API reference
    :maxdepth: 2
    :caption: Contents:
 
-   install
+   installation_guide
    userguide
    comseg
 ------------

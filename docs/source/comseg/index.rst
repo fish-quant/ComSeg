@@ -6,5 +6,7 @@ Welcome to comseg's documentation!
    :maxdepth: 4
    :caption: Contents
 
+
+   installation_guide
    userguide
    comseg

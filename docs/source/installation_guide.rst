@@ -2,4 +2,5 @@ Installation guide
 ------------------------------------------
 
 .. toctree::
-   installation_guide/index
+
+   installation_guide/install
