@@ -37,7 +37,7 @@ ComSeg. In a terminal run the command:
 
 .. code-block:: bash
 
-   $ pip install ComSeg
+   $ pip install comseg
 
 Clone package from Github
 -------------------------
