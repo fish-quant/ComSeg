@@ -61,7 +61,7 @@ API reference
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
-
+   index.rst
    userguide
    comseg
 ------------
