@@ -62,11 +62,18 @@ API reference
    :maxdepth: 2
    :caption: Contents:
 
-   install
    userguide
    comseg
 ------------
 
+
+Index
+*************
+
+.. toctree::
+   :maxdepth: 2
+   :caption: ComSeg:
+   index.rst
 ------------
 
 
