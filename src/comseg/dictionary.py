@@ -46,10 +46,9 @@ class ComSegDict():
     def __init__(self,
                  dataset=None,
                  mean_cell_diameter= None,
-                 clustering_method="louvain_with_prior",
+                 community_detection="with_prior",
                  seed=None,
                  prior_name="in_nucleus",
-                 confidence_level=1,
                  ):
 
         """
@@ -57,24 +56,23 @@ class ComSegDict():
         :type dataset: ComSegDataset
         :param mean_cell_diameter: the expected mean cell diameter in µm default is 15µm
         :type mean_cell_diameter: float
-        :param clustering_method: choose in ["with_prior",  "louvain"], "with_prior" is our graph partioning / community
+        :param community_detection: choose in ["with_prior",  "louvain"], "with_prior" is our graph partioning / community
                 detection method taking into account prior knowledge
-        :type clustering_method: str
+        :type community_detection: str
         :param seed: (optional) seed for the graph partioning initialization
         :type seed: int
         :param prior_name: (optional) Name of the prior cell assignment column the input CSV file. Node with the same prior label will be merged into a super node.
         node with different prior label can not be merged during the modularity optimization.
         :type prior_name: str
-        :param confidence_level: (experimental) confidence level for the prior knowledge (prior_name) in the range [0,1]. 1 means that the prior knowledge is certain.
-        :type confidence_level: float
-        """
 
+        """
+        #:param confidence_level: (experimental) confidence level for the prior knowledge (prior_name) in the range [0,1]. 1 means that the prior knowledge is certain.
+        #:type confidence_level: float
         self.dataset = dataset
         self.mean_cell_diameter = mean_cell_diameter
-        self.clustering_method = clustering_method
+        self.community_detection = community_detection
         self.seed = seed
         self.prior_name = prior_name
-        self.confidence_level = confidence_level
         self.dict_img_name = {}
 
         ###
@@ -150,7 +148,6 @@ class ComSegDict():
         :rtype:  AnnData
         """
         if len(self) > 1:
-
             self.global_anndata = ad.concat([self[img].community_anndata for img in self])
             self.global_anndata.obs["img_name"] =  np.concatenate([[img] * len(self[img].community_anndata) for img in self])
         else:
@@ -160,7 +157,6 @@ class ComSegDict():
                 self.global_anndata.obs["img_name"] = [img_name] * len(self.global_anndata)
             elif type(img_name) == type([]):
                 self.global_anndata.obs["img_name"] = img_name * len(self.global_anndata)
-
         return self.global_anndata
 
 
@@ -168,15 +164,15 @@ class ComSegDict():
 
 
     def compute_community_vector(self,
-                                 k_nearest_neighbors=10,
-                                 select_only_positive_edges = False,
-                                 remove_self_node = True,):
+                                 k_nearest_neighbors : int = 10):
         """
 
         for all the images in the dataset, this function creates a graph of RNAs
         and compute the community vectors
 
         :param self:
+        :param k_nearest_neighbors: number of nearest neighbors to consider for the graph creation
+        :type k_nearest_neighbors: int
         :return:
         """
         for img_name in tqdm(list(self.dataset)):
@@ -192,14 +188,10 @@ class ComSegDict():
             self[img_name] = comseg_m
 
             #### COMMÛTE COMMUNITY OF RNA
-
             comseg_m.community_vector(
-                clustering_method=self.clustering_method,
+                clustering_method=self.community_detection,
                 seed=self.seed,
                 prior_name=self.prior_name,
-                confidence_level=self.confidence_level,
-                select_only_positive_edges = select_only_positive_edges,
-                remove_self_node = remove_self_node,
                 )
             self[img_name] = comseg_m
 
@@ -252,6 +244,7 @@ class ComSegDict():
         :type n_clusters_kmeans: int
         :param palette: color palette for the cluster list of (HEX) color
         :type palette: list[str]
+        :param merge_cluster: if True, the clusters with a correlation > min_merge_correlation will be merged and the clustering method is renamed {clustering_method}_merged
         :param min_merge_correlation: minimum correlation to merge cluster
         :type min_merge_correlation: float
         :return:
@@ -351,7 +344,7 @@ class ComSegDict():
 
             self[img_name].add_cluster_id_to_graph(
                                     dict_cluster_id = dico_commu_cluster,
-                                    clustering_method="with_prior")
+                                    clustering_method=clustering_method)
 
         return self
 
@@ -359,7 +352,7 @@ class ComSegDict():
     ### Add and classify centroid
 
     def classify_centroid(self,
-                      path_dict_cell_centroid,
+                      path_dict_cell_centroid = None,
                       n_neighbors=15,
                       dict_in_pixel=True,
                       max_dist_centroid=None,
@@ -374,7 +367,7 @@ class ComSegDict():
         label from ``add_cluster_id_to_graph()``
 
 
-        :param path_dict_cell_centroid: path to the folder containing the centroid dictionary {cell : {z:,y:,x:}}
+        :param path_dict_cell_centroid: If computed already by the ``ComSegDataset`` class from prior Maks leave it None. Otherwise :  Path to the folder containing the centroid dictionary {cell : {z:,y:,x:}}
                         with each centroid dictionary in a file named as the image name and store in a npy format
         :type path_dict_cell_centroid: str
         :param n_neighbors: number of neighbors to consider for the classification of the centroid (default 15)
@@ -393,7 +386,11 @@ class ComSegDict():
 
 
         for img_name in tqdm(self):
-            dict_cell_centroid = np.load(Path(path_dict_cell_centroid) / (img_name + file_extension), allow_pickle=True).item()
+
+            if path_dict_cell_centroid is not None:
+                dict_cell_centroid = np.load(Path(path_dict_cell_centroid) / (img_name + file_extension), allow_pickle=True).item()
+            else:
+                dict_cell_centroid = self.dataset.dict_centroid[img_name]
 
             self[img_name].classify_centroid(dict_cell_centroid,
                                              n_neighbors=n_neighbors,
@@ -409,7 +406,7 @@ class ComSegDict():
 
     def associate_rna2landmark(self,
         key_pred="leiden_merged",
-        super_node_prior_key='in_nucleus',
+        prior_name='in_nucleus',
         distance='distance',
         max_cell_radius=100):
         """
@@ -431,7 +428,7 @@ class ComSegDict():
             print(img_name)
             self[img_name].associate_rna2landmark(
                 key_pred=key_pred,
-                super_node_prior_key=super_node_prior_key,
+                prior_name=prior_name,
                 distance=distance,
                 max_cell_radius=max_cell_radius)
 

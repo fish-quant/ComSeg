@@ -16,9 +16,9 @@ from pathlib import Path
 from sklearn.neighbors import radius_neighbors_graph
 #from processing_seg import full_df
 from tqdm import tqdm
-
+from skimage import measure
 ### dataset class
-
+from .utils.preprocessing import compute_dict_centroid
 
 
 
@@ -39,8 +39,8 @@ class ComSegDataset():
         path_dataset_folder = None,
         path_to_mask_prior = None,
         mask_file_extension = ".tiff",
-        dict_scale={"x": 0.103, 'y': 0.103, "z": 0.3}
-                 ):
+        dict_scale={"x": 0.103, 'y': 0.103, "z": 0.3},
+        mean_cell_diameter = 15):
 
         """
         :param path_dataset_folder: path to the folder containing the csv files
@@ -51,6 +51,8 @@ class ComSegDataset():
         :default mask_file_extension: ".tiff"
         :param dict_scale: dictionary containing the pixel/voxel size of the images in µm default is {"x": 0.103, 'y': 0.103, "z": 0.3}
         :type dict_scale: dict
+        :param mean_cell_diameter: the expected mean cell diameter in µm default is 15µm
+        :type mean_cell_diameter: float
         """
 
         self.path_dataset_folder = Path(path_dataset_folder)
@@ -67,6 +69,8 @@ class ComSegDataset():
         self.list_index = list(self.path_image_dict.keys())
         self.selected_genes = np.unique(unique_gene)
         self.dict_scale = dict_scale
+        self.dict_centroid = {}
+        self.mean_cell_diameter = mean_cell_diameter
 
     def __getitem__(self, key):
         if isinstance(key, int):
@@ -94,7 +98,9 @@ class ComSegDataset():
 
     def add_prior_from_mask(self,
                             prior_keys_name = 'in_nucleus',
-                            overwrite = False):
+                            overwrite = False,
+                            compute_centroid = False,
+                            ):
 
         """
 
@@ -104,6 +110,8 @@ class ComSegDataset():
         :param prior_keys_name: name of the column to add in the csv files containing the prior label of each spot
         :type str
         :param overwrite: if True, overwrite the prior_keys_name column if it already exists
+        :type bool
+        :param compute_centroid : if True, compute the centroid of each cell/nucleus in segmentation mask for to use it for RNA-cell association
         :type bool
         :return: None
         """
@@ -133,6 +141,13 @@ class ComSegDataset():
             df_spots.to_csv(image_path_df,  index=False)
             print(f"prior added to {image_path_df.stem} and save in csv file")
 
+            from skimage import measure
+
+            if compute_centroid:
+                dict_centroid = compute_dict_centroid(mask_nuclei = mask,
+                                                      background=0)
+
+                self.dict_centroid[image_path_df.stem] = dict_centroid
 
 
     ### compute the co-expression matrix
@@ -140,7 +155,7 @@ class ComSegDataset():
     def count_matrix_in_situ_from_knn(self,
                                       df_spots_label,
                                       n_neighbors=5,
-                                      radius=5,
+                                      radius=None,
                                       remove_self_node = False):
 
 
@@ -151,7 +166,7 @@ class ComSegDataset():
         :type df_spots_label: pd.DataFrame
         :param n_neighbors: maximum number of neighbors default is 40
         :type n_neighbors: int
-        :param radius: maximum radius of neighbors. It should be set proportionnaly to expected cell size
+        :param radius: maximum radius of neighbors. It should be set proportionnaly to expected cell size, default is radius =  mean_cell_diameter / 2
         :return: count_matrix of shape (N_rna,  n_genes) where n_genes is the number of unique genes in df_spots_label
         each row is an 'RNA expression vector' summarizing local expression neighborhood of a molecule
         :rtype: np.array
@@ -254,10 +269,9 @@ class ComSegDataset():
     def compute_edge_weight(
             self,
             images_subset = None,
-            n_neighbors=25,
-            radius=1,  # in micormeter
+            n_neighbors=40,
+            radius= None ,  # in micormeter
             distance="pearson",
-            per_images=False,
             sampling=False,
             sampling_size=100000,
     remove_self_node = False):
@@ -267,19 +281,25 @@ class ComSegDataset():
         """
         compute the gene co-expression correlation at the dataset scale
 
-        :param dico_df_spots_label:
-        :param images_subset:
-        :param mode:
-        :param n_neighbors:
-        :param radius:
-        :param distance:
-        :param per_images:
-        :param sampling:
-        :param sampling_size:
-        :return: dico_proba_edge : a dictionary of dictionary correlation between genes. dict[gene_source][gene_target] = correlation
-        :return: count_matrix : the count matrix used to compute the correlation
+        :param images_subset: default None, if not None, only compute the correlation on the images in the list
+        :type images_subset: list
+        :param n_neighbors:  default 40 ,number of neighbors to consider in the knn graph
+        :type n_neighbors: int
+        :param radius: radius of the knn graph in micrometer default None, if None, radius = mean_cell_diameter/2
+        :type radius: float
+        :param distance: choose in ["pearson", "spearman"] default is pearson
+        :type distance: str
+        :param sampling: default False, if True, sample the dataset to compute the correlation
+        :type sampling: bool
+        :param sampling_size: if sampling is True : number of proximity weighted expression vector to sample
+        :return:
+           - dico_proba_edge - a dictionary of dictionary correlation between genes. dict[gene_source][gene_target] = correlation
+           - count_matrix - the count matrix used to compute the correlation
         :rtype:  dict, np.array
         """
+
+        if radius is None:
+            radius = self.mean_cell_diameter / 2
 
         dico_proba_edge = {}
 
@@ -301,17 +321,27 @@ class ComSegDataset():
                                                         remove_self_node=remove_self_node)
             list_of_count_matrix.append(count_matrix)
         if sampling:
-            print("count_matrix.shape", count_matrix.shape)
-            print(f"sampling {sampling} vectors")
-            count_matrix = np.concatenate(list_of_count_matrix, axis=0)
-            count_matrix = count_matrix[np.random.choice(count_matrix.shape[0], sampling_size, replace=False), :]
-            print("count_matrix.shape", count_matrix.shape)
+            if len(list_of_count_matrix) > sampling_size:
+                print("count_matrix.shape", count_matrix.shape)
+                print(f"sampling {sampling} vectors")
+                count_matrix = np.concatenate(list_of_count_matrix, axis=0)
+                count_matrix = count_matrix[np.random.choice(count_matrix.shape[0], sampling_size, replace=False), :]
+                print("count_matrix.shape", count_matrix.shape)
 
         dict_co_expression = self.get_dict_proba_edge_in_situ(count_matrix=count_matrix,
                                                           distance=distance,
                                                           )
         self.dict_co_expression = dict_co_expression
         return dico_proba_edge, count_matrix
+
+    def _compute_dico_centroid(mask_nuclei, dico_simu=None):
+        dico_nuclei_centroid = {}
+        nuclei_labels = measure.label(mask_nuclei, background=0)
+        for lb in measure.regionprops(nuclei_labels):
+            dico_nuclei_centroid[lb.label] = {}
+            dico_nuclei_centroid[lb.label]['centroid'] = lb.centroid
+            # print(lb.centroid)
+        return dico_nuclei_centroid
 
 
 

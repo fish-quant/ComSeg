@@ -33,4 +33,4 @@ cd cnn_framework
 pip install -e .
 ```
 
-this repository contains a tutorail and a test dataset can be find here : todo
+A tutorial notebook can be found here : https://comseg.readthedocs.io/en/latest/userguide.html

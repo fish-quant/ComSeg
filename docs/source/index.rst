@@ -25,15 +25,15 @@ environments.html>`_ environment.  In a terminal run the command:
 
    $ conda create -n ComSeg_env python=3.8
    $ source activate ComSeg_env
+   $ conda install gxx_linux-64 numpy pip R=4.3
 
 
-We recommend two options to then install Sim-FISH in your virtual environment.
 
 Download the package from PyPi
 ------------------------------
 
 Use the package manager `pip <https://pip.pypa.io/en/stable>`_ to install
-Sim-FISH. In a terminal run the command:
+ComSeg. In a terminal run the command:
 
 .. code-block:: bash
 

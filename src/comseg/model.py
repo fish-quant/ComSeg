@@ -180,8 +180,8 @@ class ComSegGraph():
         """
         Partition the graph into communities/sets of RNAs and computes and stores the "community expression vector"
          in the ``community_anndata`` class attribute
-        :param clustering_method: choose in ["with_prior",  "louvain"], "with_prior" is our graph partitioning/community
-                detection method taking into account prior knowledge from landmarks like nuclei or cell mask.
+        :param clustering_method: choose in ["with_prior",  "louvain"]. "with_prior" is our graph partitioning / community
+                detection method modify from Louvain, taking into account prior knowledge from landmarks like nuclei or cell mask.
         :type clustering_method: str
         :param seed: (optional) seed for the graph partitioning initialization
         :type seed: int
@@ -287,7 +287,7 @@ class ComSegGraph():
 
     def add_cluster_id_to_graph(self,
                                 dict_cluster_id,
-                                clustering_method = "with_prior"):
+                                clustering_method = "leiden_merged"):
         """
 
         add transcriptional cluster id to each RNA molecule in the graph
@@ -433,6 +433,8 @@ class ComSegGraph():
         :type max_dist_centroid: int
         :param key_pred: key-name of the node attribute containing the cluster id (default "leiden_merged")
         :type key_pred: str
+        :param distance: leave it to "ngb_distance_weights" (default "ngb_distance_weights")
+        :type distance: str
 
         :return: self.G
         :rtype: nx.Graph
@@ -453,7 +455,7 @@ class ComSegGraph():
                     centroid_pix = np.array(self.dict_cell_centroid[nuc][0]) ## to clean, in case of old version of dict
                 else:
                     assert len(self.dict_cell_centroid[nuc]) == len(self.list_coordo_order[0])
-                    centroid_pix = self.dict_cell_centroid[nuc]
+                    centroid_pix = np.array(self.dict_cell_centroid[nuc])
                 centroid_um = centroid_pix * np.array([self.dict_scale['z'],
                                                                          self.dict_scale['y'],
                                                                          self.dict_scale["x"]])

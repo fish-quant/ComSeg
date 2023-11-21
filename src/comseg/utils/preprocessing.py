@@ -22,7 +22,7 @@ import time
 import tifffile
 from skimage.measure import regionprops
 
-
+from skimage import measure
 #from utils.seg_preprocessing import generate_dico_centroid
 
 
@@ -198,13 +198,6 @@ def select_genes_for_sct(vec = None,
     return bool_index, np.array(genes)[bool_index]
 
 
-
-
-
-
-
-
-
 def generate_dico_centroid(path_to_mask):
     if 'tif' == str(path_to_mask)[-3:]:
         seg_mask = tifffile.imread(path_to_mask)
@@ -223,21 +216,13 @@ def generate_dico_centroid(path_to_mask):
 
 
 
-
-
-
-if __name__ == '__main__':
-
-    path_nuc_folder = Path('/media/tom/T7/regular_grid/simu1912/elbow_cube/remove20/nuclei_irregular')
-    path_folder_dico_centroid = "/media/tom/T7/regular_grid/simu1912/elbow_cube/remove20/dico_centroid_irregular"
-
-    for path_nuc in path_nuc_folder.glob('*.npy'):
-        dico_centroid = generate_dico_centroid(path_to_mask = path_nuc)
-
-        np.save(Path(path_folder_dico_centroid) / (path_nuc.stem + '.npy'), dico_centroid)
-
-
-
-
-
-
+def compute_dict_centroid(mask_nuclei,  background=0):
+    dict_centroid = {}
+    #nuclei_labels = measure.label(mask_nuclei, background=background)
+    for pp in measure.regionprops(mask_nuclei):
+        if len(pp.centroid) == 2:
+            dict_centroid[pp.label] = [[0, pp.centroid[0], pp.centroid[1]]]
+        else:
+            assert len(pp.centroid) == 3
+            dict_centroid[pp.label] = pp.centroid
+    return dict_centroid
