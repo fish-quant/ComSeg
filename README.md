@@ -8,7 +8,7 @@ A detail documentation is available Here https://comseg.readthedocs.io/en/latest
 ComSeg is an algorithm for single cell spatial RNA profiling in image-based transcriptomic data.
 
 It takes as input a csv with the spot coordinates and output an anndata 
-object with the  enes expression and coordinates of each cell.
+object with the  genes expression and coordinates of each cell.
 
 ### Citation 
  A point cloud segmentation framework for image-based spatial transcriptomics
