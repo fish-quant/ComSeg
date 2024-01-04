@@ -274,6 +274,7 @@ class ComSegDataset():
             distance="pearson",
             sampling=False,
             sampling_size=100000,
+            sampling_images = False,
     remove_self_node = False):
 
         #print("adapt to when I prune")

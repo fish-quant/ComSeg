@@ -327,6 +327,7 @@ class InSituClustering():
         else:
             list_boll_nan = np.sum(np.isnan(norm_expression_vectors), axis=1) == 0
             projected_vect = norm_expression_vectors[list_boll_nan]
+        projected_vect = np.array(projected_vect)
         if len(projected_vect) > 0 and np.sum(list_boll_nan) != 0:
             proba = kn_neighb.predict_proba(projected_vect)
             list_index_cluster_max = np.argmax(proba, axis=1)
@@ -401,7 +402,8 @@ class InSituClustering():
                 ## get_index of unclassify community index
 
 
-            bool_index_unclassified = np.array(self.anndata.obs[key_pred]) == '-1'
+            bool_index_unclassified = np.logical_and(np.array(self.anndata.obs[key_pred]) == '-1',
+                                                    np.sum(self.anndata.X.toarray(), axis= 1) != 0)
             index_unclassified = np.nonzero(bool_index_unclassified)[0]
             ## get unclassified community  expression vector
             unclassified_vector = self.anndata[index_unclassified,

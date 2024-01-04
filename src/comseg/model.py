@@ -316,7 +316,7 @@ class ComSegGraph():
 
     def _estimation_density_vec(self,
                                #max_dist = 5,
-                                key_word = "kernel_vector",
+                               key_word = "kernel_vector",
                                remove_self_node = True,
                                norm_gauss = False,
                                 distance_weight_mode = "exp"):
@@ -693,15 +693,16 @@ class ComSegGraph():
         :return:
         """
 
-        dico_cell_genes = {}
-        dico_cell_genes_coordinate = {}
-        dico_cell_genes_name = {}
-
+        dict_cell_genes = {}
+        dict_cell_genes_coordinate = {}
+        dict_cell_genes_name = {}
+        dict_cell_genes_mol_index = {}
         list_cell_centroid = []
         for cell in self.dict_cell_centroid:
-            dico_cell_genes[cell] = []
-            dico_cell_genes_coordinate[cell] = []
-            dico_cell_genes_name[cell] = []
+            dict_cell_genes[cell] = []
+            dict_cell_genes_coordinate[cell] = []
+            dict_cell_genes_name[cell] = []
+            dict_cell_genes_mol_index[cell] = []
             centroid = self.dict_cell_centroid[cell]
             centroid  = np.array(centroid)
             if centroid.ndim == 2:
@@ -709,25 +710,31 @@ class ComSegGraph():
             list_cell_centroid += [tuple(centroid)]
         for node_index, node_data in self.G.nodes(data = True):
             if node_data['gene'] != 'centroid' and node_data[key_cell_pred] != 0:
-                dico_cell_genes[node_data[key_cell_pred]].append(node_data['gene'])
-                dico_cell_genes_coordinate[node_data[key_cell_pred]].append([node_data["z"],
+                dict_cell_genes[node_data[key_cell_pred]].append(node_data['gene'])
+                dict_cell_genes_coordinate[node_data[key_cell_pred]].append([node_data["z"],
                                                          node_data['y'],
                                                          node_data['x']])
+
+                dict_cell_genes_mol_index[node_data[key_cell_pred]].append(node_data['index'])
 
         list_expression_vectors = []
         list_cell_id = []
         list_cell_genes_coordinate = []
         list_genes_name = []
-        for cell in dico_cell_genes:
+        list_gene_index  = []
+        for cell in dict_cell_genes:
             expression_vector = np.bincount(
-                [self.gene_index_dict[gene] for gene in dico_cell_genes[cell]]
+                [self.gene_index_dict[gene] for gene in dict_cell_genes[cell]]
                         , minlength=len(self.gene_index_dict))
             list_expression_vectors.append(expression_vector)
             list_cell_id.append(cell)
             list_cell_genes_coordinate.append(
-                np.array(dico_cell_genes_coordinate[cell])
+                np.array(dict_cell_genes_coordinate[cell])
             )
-            list_genes_name.append(dico_cell_genes[cell])
+            list_genes_name.append(dict_cell_genes[cell])
+
+            list_gene_index.append(dict_cell_genes_mol_index[cell])
+
         anndata = ad.AnnData(np.array(list_expression_vectors))
         anndata.var["features"] = self.selected_genes
         anndata.var_names = self.selected_genes
@@ -742,7 +749,7 @@ class ComSegGraph():
         csv_list_x = []
         csv_list_gene = []
         csv_list_cell = []
-        csv_list_cell_type = []
+        csv_index_list = []
         for cell_index in range(len(list_cell_id)):
             if len(list_genes_name[cell_index]) > 0:
                 csv_list_z += list(np.array(list_cell_genes_coordinate[cell_index])[:, 0])
@@ -753,11 +760,14 @@ class ComSegGraph():
                 csv_list_cell += [list_cell_id[cell_index]] * len(list_genes_name[cell_index])
                 csv_list_gene += list_genes_name[cell_index]
 
+                csv_index_list += list(dict_cell_genes_mol_index[list_cell_id[cell_index]])
+
         df_spots = pd.DataFrame({"z": csv_list_z,
                                  "y": csv_list_y,
                                  "x": csv_list_x,
                                  "gene": csv_list_gene,
-                                 "cell": csv_list_cell})
+                                 "cell": csv_list_cell,
+                                 "original_index" : csv_index_list})
 
         anndata.uns["df_spots"] = df_spots
         return anndata

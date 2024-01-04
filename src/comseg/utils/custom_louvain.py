@@ -156,7 +156,7 @@ def louvain_partitions(
     partition =None,
     prior_key = "in_nucleus",
     confidence_level = 0.99
-):
+    ):
     """Yields partitions for each level of the Louvain Community Detection Algorithm
 
     Louvain Community Detection Algorithm is a simple method to extract the community
@@ -239,11 +239,10 @@ def louvain_partitions(
             graph, inner_partition, resolution=resolution, weight="weight"
         )
         graph = _gen_graph(graph, partition = inner_partition)
-        #if new_mod - mod <= threshold:
-        #    print(f'stop because of threshold {new_mod - mod} inf to {threshold}')
-        #    return
-        #mod = new_mod
-        # gh-5901 protect the sets in the yielded list from further manipulation here
+        if new_mod - mod <= threshold:
+            print(f'stop because of threshold {new_mod - mod} inf to {threshold}')
+            return
+        mod = new_mod
         yield [s.copy() for s in partition], graph
 
         partition, inner_partition, improvement = _one_level(
@@ -257,6 +256,7 @@ def louvain_partitions(
             prior_key="prior_index", ## harcoded prior key name from _gen_graph
         )
         #print(len(partition))
+
 
 def compute_prior_factor(source, ind_node, confidence_level = 0.99):
 
