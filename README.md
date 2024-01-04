@@ -8,29 +8,9 @@ A detail documentation is available Here https://comseg.readthedocs.io/en/latest
 ComSeg is an algorithm for single cell spatial RNA profiling in image-based transcriptomic data.
 
 It takes as input a csv with the spot coordinates and output an anndata 
-object with the  enes expression and coordinates of each cell.
+object with the  genes expression and coordinates of each cell.
 
-## Installation
-
-First, create a dedicated conda environment using Python 3.8
-
-```bash
-conda create -n ComSeg python=3.8
-conda activate ComSeg
-```
-
-To install the latest github version of this library run the following using pip
-
-```bash
-pip install git++https://github.com/tdefa/ComSeg
-```
-
-or alternatively you can clone the github repository
-
-```bash
-git clone +https://github.com/tdefa/ComSeg
-cd cnn_framework
-pip install -e .
-```
-
-A tutorial notebook can be found here : https://comseg.readthedocs.io/en/latest/userguide.html
+### Citation 
+ A point cloud segmentation framework for image-based spatial transcriptomics
+Thomas Defard, Hugo Laporte, Mallick Ayan, Soulier Juliette, Sandra Curras-Alonso, Christian Weber, Florian Massip, José-Arturo Londoño-Vallejo, Charles Fouillade, Florian Mueller, Thomas Walter
+bioRxiv 2023.12.01.569528; doi: https://doi.org/10.1101/2023.12.01.569528 

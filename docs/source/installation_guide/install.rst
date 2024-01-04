@@ -22,8 +22,14 @@ environments.html>`_ environment.  In a terminal run the command:
 
    $ conda create -n ComSeg_env python=3.8
    $ source activate ComSeg_env
-   $ conda install gxx_linux-64 numpy pip R=4.3
+   $ conda install R=4.3
 
+then in ``R`` do
+
+.. code-block:: bash
+
+   install.packages("sctransform")
+   install.packages("feather")
 
 
 Download the package from PyPi
