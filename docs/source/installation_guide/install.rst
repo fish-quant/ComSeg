@@ -30,6 +30,7 @@ then in ``R`` do
 
    install.packages("sctransform")
    install.packages("feather")
+   install.packages("arrow")
 
 
 Download the package from PyPi
