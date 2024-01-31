@@ -30,6 +30,7 @@ then in ``R`` do
 
    install.packages("sctransform")
    install.packages("feather")
+   install.packages("arrow")
 
 
 Download the package from PyPi
@@ -92,4 +93,10 @@ Citation
 ========
 
 If you exploit this package for your work, please cite:
+
+ A point cloud segmentation framework for image-based spatial transcriptomics
+Thomas Defard, Hugo Laporte, Mallick Ayan, Soulier Juliette, Sandra Curras-Alonso, Christian Weber, Florian Massip, José-Arturo Londoño-Vallejo, Charles Fouillade, Florian Mueller, Thomas Walter
+bioRxiv 2023.12.01.569528; doi: https://doi.org/10.1101/2023.12.01.569528 
+
+
 
