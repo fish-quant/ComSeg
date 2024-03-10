@@ -11,7 +11,6 @@ import tifffile
 import pandas as pd
 from scipy.stats import hypergeom
 from sklearn.neighbors import NearestNeighbors
-sys.path.insert(1, os.getcwd() + "/code/")
 from pathlib import Path
 from sklearn.neighbors import radius_neighbors_graph
 #from processing_seg import full_df
@@ -133,7 +132,7 @@ class ComSegDataset():
             prior_list = []
 
             for ix in range(len(z_list)):
-                nuc_index_prior = mask[z_list[ix], y_list[ix], x_list[ix]]
+                nuc_index_prior = mask[int(z_list[ix]), int(y_list[ix]), int(x_list[ix])]
                 prior_list.append(nuc_index_prior)
             if prior_keys_name in df_spots.columns and overwrite == False:
                 raise Exception(f"prior_keys_name {prior_keys_name} already in df_spots and overwrite is False")
@@ -306,11 +305,11 @@ class ComSegDataset():
 
         list_of_count_matrix = []
         assert self.__len__() > 0, "no images in the dataset"
-        for image_name in tqdm(list(self.path_image_dict.keys())):
-
-            if images_subset is not None: ## select only intersting images if needed
-                if image_name not in images_subset:
-                    continue
+        ## check that all the images in images_subset are in the dataset
+        if images_subset is not None:
+            for image_name in images_subset:
+                assert image_name in list(self.path_image_dict.keys()), f"{image_name} not in the dataset"
+        for image_name in tqdm(images_subset):
             df_spots_label = pd.read_csv(self.path_image_dict[image_name])
             #print(df_spots_label)
 
@@ -321,11 +320,11 @@ class ComSegDataset():
                                                          radius=radius,
                                                         remove_self_node=remove_self_node)
             list_of_count_matrix.append(count_matrix)
+            count_matrix = np.concatenate(list_of_count_matrix, axis=0)
         if sampling:
-            if len(list_of_count_matrix) > sampling_size:
+            if len(count_matrix) > sampling_size:
                 print("count_matrix.shape", count_matrix.shape)
                 print(f"sampling {sampling} vectors")
-                count_matrix = np.concatenate(list_of_count_matrix, axis=0)
                 count_matrix = count_matrix[np.random.choice(count_matrix.shape[0], sampling_size, replace=False), :]
                 print("count_matrix.shape", count_matrix.shape)
 
