@@ -2,6 +2,7 @@
 <img src="./comseg.png" width="650" height="263">
 
 # News
+
 Update with comseg 0.0.7. Computation if the co-expression matrix is now faster.
 
 # Support
