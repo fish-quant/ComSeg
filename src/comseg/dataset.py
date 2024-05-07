@@ -155,7 +155,10 @@ class ComSegDataset():
                                       df_spots_label,
                                       n_neighbors=5,
                                       radius=None,
-                                      remove_self_node = False):
+                                      remove_self_node = False,
+                                      sampling=True,
+                                      sampling_size=10000
+                                      ):
 
 
         """
@@ -179,6 +182,9 @@ class ComSegDataset():
             df_spots_label = df_spots_label.reset_index()
         except Exception as e:
             print(e)
+
+
+
         if "z" in df_spots_label.columns:
             list_coordo_order_no_scaling = np.array([df_spots_label.z, df_spots_label.y, df_spots_label.x]).T
             list_coordo_order = list_coordo_order_no_scaling * np.array(
@@ -203,8 +209,30 @@ class ComSegDataset():
         ad[distance > radius] = 0
         ad.eliminate_zeros()
 
+
         rows, cols, BOL = sp.find(ad == 1)
-        edges = list(zip(rows.tolist(), cols.tolist()))
+
+        ## dratf optimisation
+        unique_rows = np.unique(rows)
+        if sampling:
+            if len(unique_rows) > sampling_size:
+                unique_rows = np.random.choice(unique_rows, sampling_size, replace=False)
+
+        list_expression_vec = []
+        for row in unique_rows:
+            col_index = np.nonzero(ad[row])[1]
+            if remove_self_node:
+                col_index = col_index[col_index != row]
+            vectors_gene = list(array_gene_indexed[col_index])
+            vector_distance = np.array([distance[row, col] for col in col_index])
+            expression_vector = np.zeros(len(self.selected_genes))
+            for str_gene_index in range(len(vectors_gene)):
+                str_gene = vectors_gene[str_gene_index]
+                expression_vector[gene_index_dico[str_gene]] += (radius  - 1 *  vector_distance[str_gene_index]) / radius
+            list_expression_vec.append(expression_vector)
+        count_matrix = np.array(list_expression_vec)
+
+        """edges = list(zip(rows.tolist(), cols.tolist()))
 
         G = nx.DiGraph()  # oriented graph
         G.add_nodes_from(list_features_order)
@@ -224,10 +252,11 @@ class ComSegDataset():
                 str_gene = vectors_gene[str_gene_index]
                 expression_vector[gene_index_dico[str_gene]] += (radius  - 1 *  vector_distance[str_gene_index]) / radius
             list_expression_vec.append(expression_vector)
-        count_matrix = np.array(list_expression_vec)
+        count_matrix = np.array(list_expression_vec)"""
         return count_matrix
 
-    def get_dict_proba_edge_in_situ(self, count_matrix,
+    def get_dict_proba_edge_in_situ(self,
+                                    count_matrix,
                                     distance="pearson",
                                     ):
         """
@@ -240,6 +269,7 @@ class ComSegDataset():
         :return: a dictionary of dictionary corelation between genes dict[gene_source][gene_target] = correlation
         :rtype: dict
         """
+
         import math
         assert distance in ["spearman", "pearson"]
         from tqdm import tqdm
@@ -271,9 +301,8 @@ class ComSegDataset():
             n_neighbors=40,
             radius= None ,  # in micormeter
             distance="pearson",
-            sampling=False,
-            sampling_size=100000,
-            sampling_images = False,
+            sampling=True,
+            sampling_size=10000,
     remove_self_node = False):
 
         #print("adapt to when I prune")
@@ -309,7 +338,11 @@ class ComSegDataset():
         if images_subset is not None:
             for image_name in images_subset:
                 assert image_name in list(self.path_image_dict.keys()), f"{image_name} not in the dataset"
-        for image_name in tqdm(images_subset):
+            list_img = images_subset
+        else:
+            list_img = list(self.path_image_dict.keys())
+
+        for image_name in tqdm(list_img):
             df_spots_label = pd.read_csv(self.path_image_dict[image_name])
             #print(df_spots_label)
 
@@ -318,7 +351,9 @@ class ComSegDataset():
             count_matrix = self.count_matrix_in_situ_from_knn(df_spots_label=df_spots_label,  # df_spots_label,
                                                          n_neighbors=n_neighbors,
                                                          radius=radius,
-                                                        remove_self_node=remove_self_node)
+                                                        remove_self_node=remove_self_node,
+                                                              sampling=True,
+                                                              sampling_size=int(sampling_size/len(list_img) +1))
             list_of_count_matrix.append(count_matrix)
             count_matrix = np.concatenate(list_of_count_matrix, axis=0)
         if sampling:

@@ -212,7 +212,6 @@ class ComSegGraph():
         assert nx.is_directed(self.G)
         G = self.G.copy()
         G.remove_edges_from([(d[0], d[1]) for d in list(G.edges(data=True)) if d[2]["weight"] < 0])
-        print("only positive w selected")
         if clustering_method == "louvain":
             comm = nx_comm.louvain_communities(G.to_undirected(reciprocal=False),
                                                weight="weight",
@@ -755,11 +754,8 @@ class ComSegGraph():
                 csv_list_z += list(np.array(list_cell_genes_coordinate[cell_index])[:, 0])
                 csv_list_y += list(np.array(list_cell_genes_coordinate[cell_index])[:, 1])
                 csv_list_x += list(np.array(list_cell_genes_coordinate[cell_index])[:, 2])
-
-
                 csv_list_cell += [list_cell_id[cell_index]] * len(list_genes_name[cell_index])
                 csv_list_gene += list_genes_name[cell_index]
-
                 csv_index_list += list(dict_cell_genes_mol_index[list_cell_id[cell_index]])
 
         df_spots = pd.DataFrame({"z": csv_list_z,

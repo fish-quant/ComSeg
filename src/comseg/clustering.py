@@ -46,6 +46,7 @@ class InSituClustering():
         self.anndata = anndata  ## contain the expression vector of all commu
         self.selected_genes = selected_genes
         self.anndata_cluster = None ## contain the expression vector of the cluster commu ie more than x RNA
+        #self.anndata.var.index = self.anndata.var.index.astype(str)
 
     def compute_normalization_parameters(self,
                                          debug_path = None):
@@ -97,6 +98,7 @@ class InSituClustering():
                               n_clusters_kmeans = 4,
                               palette = None,
                               plot_umap = False):
+
         """
         Cluster the RNA partition/community expression vector to identify the single cell transcriptomic cluster present in the dataset
 
@@ -130,6 +132,8 @@ class InSituClustering():
         if norm_vector: ## apply sctrasnform
             if not  hasattr(self, "param_sctransform"):
                 raise ValueError("You need to compute the normalization parameters with 'compute_normalization_parameters' before clustering ")
+            #self.anndata.obs.index = self.anndata.obs.index.astype(str)
+            #self.anndata.var.index = self.anndata.var.index.astype(str)
             anndata = self.anndata[bool_index_row, self.genes_to_take]
             count_matrix_anndata = sctransform_from_parameters(self.param_sctransform,
                     anndata.X.toarray())

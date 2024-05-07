@@ -2,7 +2,7 @@
 
 
 
-#todo add dataset to zenodo
+# todo add dataset to zenodo
 # todo add function to compute centroid of cell in a df format + harmonize with the rest of the code
 # update tutorial
 
@@ -358,7 +358,6 @@ class ComSegDict():
                       max_dist_centroid=None,
                       key_pred="leiden_merged",
                       distance="ngb_distance_weights",
-                      convex_hull_centroid=True,
                         file_extension = "tiff.npy"
                       ):
 

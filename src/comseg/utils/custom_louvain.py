@@ -242,6 +242,7 @@ def louvain_partitions(
         if new_mod - mod <= threshold:
             print(f'stop because of threshold {new_mod - mod} inf to {threshold}')
             return
+        print(f'improvement of modularity {new_mod - mod}')
         mod = new_mod
         yield [s.copy() for s in partition], graph
 
