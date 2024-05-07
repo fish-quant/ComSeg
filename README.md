@@ -1,10 +1,9 @@
 
-[!comseg](./comseg.png)
-
+<img src="./comseg.png" width="650" height="263">
 # News
 Update with comseg 0.0.7. Computation if the co-expression matrix is now faster.
 
-# Support
+# Support
 
 If you have any questions relative to the package or bug, please open an issue in this repository.
 
