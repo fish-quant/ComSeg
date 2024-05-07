@@ -1,3 +1,12 @@
+
+# News
+Update with comseg 0.0.7. Computation if the co-expression matrix is now faster.
+
+# Support
+
+If you have any questions relative to the package or bug, please open an issue in this repository.
+
+
 # ComSeg framework
 
 A detail documentation is available Here https://comseg.readthedocs.io/en/latest/userguide.html
