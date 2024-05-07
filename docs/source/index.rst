@@ -5,8 +5,8 @@
 
 Welcome to ComSeg's documentation!
 ==================================
-ComSeg is a segmentation algorithm. More precisely, ComSeg is designed for single
-cell spatial RNA profiling for image-based transcriptomic data.
+ComSeg is an algorithm to perform cell segmentation from RNA point clouds
+(single cell spatial RNA profiling) from FISH based spatial transcriptomic data
 
 It takes as input csv files with the spot coordinates and either the cell centroid and the segmentation mask.
 it outputs an anndata object with the genes expression and coordinates of each cell.
