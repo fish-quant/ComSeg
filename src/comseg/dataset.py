@@ -138,7 +138,7 @@ class ComSegDataset():
                 raise Exception(f"prior_keys_name {prior_keys_name} already in df_spots and overwrite is False")
             df_spots[prior_keys_name] = prior_list
             df_spots.to_csv(image_path_df,  index=False)
-            print(f"prior added to {image_path_df.stem} and save in csv file")
+            print(f"prior added to {image_path_df.stem} and saved in csv file")
 
             from skimage import measure
 
