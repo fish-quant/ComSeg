@@ -1,0 +1,88 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+##### dapi only mode nuclei as target
+
+
+
+
+
+
+
+
+##################### nuclei as target mask_gradient_k12_t7
+
+sbatch -J breast_dapi_only_mode --output=breast_dapi_only_mode.out  train_test_v020524_breast_400.sh datasets_24_04_22_Cellbound1_4_nuclei_target dapi_only_mode  rna_gene2vect_dist_mean_standard  2 mask_gradient_k12_t7 1 3
+
+sbatch -J breast_dapi_only_mode --output=breast_dapi_only_mode_mask_gradient.out  train_test_v020524_breast_400.sh datasets_24_04_22_Cellbound1_4_nuclei_target mask_gradient_dapy_only  rna_gene2vect_dist_mean_standard  2 mask_gradient 1 3
+
+
+
+sbatch -J breast_mean --output=breast_mean.out  train_test_v020524_breast_400.sh datasets_24_04_22_Cellbound1_4_nuclei_target mask_gradient_k12_t7_rna_gene2vect_dist_mean_standard  rna_gene2vect_dist_mean_standard  2 mask_gradient_k12_t7 0 3
+
+
+
+
+sbatch -J breast_mean_std --output=breast_mean_std.out  train_test_v020524_breast_400.sh datasets_24_04_22_Cellbound1_4_nuclei_target mask_gradient_k12_t7_rna_gene2vect_dist_mean_sigma_standard  rna_gene2vect_dist_mean_sigma_standard  3 mask_gradient_k12_t7 0 3
+
+
+
+sbatch -J breast_random3 --output=breast_random3.out  train_test_v020524_breast_400.sh datasets_24_04_22_Cellbound1_4_nuclei_target mask_gradient_k12_t7_rna_gene2vect_dist_mean_sigma_standard_random3  rna_gene2vect_dist_mean_sigma_standard_random3  6 mask_gradient_k12_t7 0 3
+
+
+
+sbatch -J breast_random3 --output=breast_random3.out  train_test_v020524_breast_400.sh datasets_24_04_22_Cellbound1_4_nuclei_target mask_gradient_k12_t7_rna_gene2vect_dist_mean_sigma_standard_npc3  rna_gene2vect_dist_mean_sigma_standard_npc3  6 mask_gradient_k12_t7 0 3
+
+
+
+
+### mask_gradient_k12_t7 
+
+sbatch -J breast_mean --output=breast_mean.out  train_test_v020524_breast_400.sh datasets_24_05_05_Cellbound1_4 mask_gradient_k12_t7_rna_gene2vect_dist_mean_standard  rna_gene2vect_dist_mean_standard  2 mask_gradient_k12_t7 0 3
+
+
+
+
+sbatch -J breast_mean_std --output=breast_mean_std.out  train_test_v020524_breast_400.sh datasets_24_05_05_Cellbound1_4 mask_gradient_k12_t7_rna_gene2vect_dist_mean_sigma_standard  rna_gene2vect_dist_mean_sigma_standard  3 mask_gradient_k12_t7 0 3
+
+
+
+sbatch -J breast_random3 --output=breast_random3.out  train_test_v020524_breast_400.sh datasets_24_05_05_Cellbound1_4 mask_gradient_k12_t7_rna_gene2vect_dist_mean_sigma_standard_random3  rna_gene2vect_dist_mean_sigma_standard_random3  6 mask_gradient_k12_t7 0 3
+
+
+
+sbatch -J breast_random3 --output=breast_random3.out  train_test_v020524_breast_400.sh datasets_24_05_05_Cellbound1_4 mask_gradient_k12_t7_rna_gene2vect_dist_mean_sigma_standard_npc3  rna_gene2vect_dist_mean_sigma_standard_npc3  6 mask_gradient_k12_t7 0 3
+
+
+### mask_gradient
+
+    dict_mean_iou_best_match["mean, std distance and coexpression (3 channel)"] = 0.52878
+
+
+
+sbatch -J breast_mean --output=breast_mean.out  train_test_v020524_breast_400.sh datasets_24_05_05_Cellbound1_4 mask_gradient_rna_gene2vect_dist_mean_standard  rna_gene2vect_dist_mean_standard  2 mask_gradient
+
+
+
+
+sbatch -J breast_mean_std --output=breast_mean_std.out  train_test_v020524_breast_400.sh datasets_24_05_05_Cellbound1_4 mask_gradient_rna_gene2vect_dist_mean_sigma_standard  rna_gene2vect_dist_mean_sigma_standard  3 mask_gradient
+
+
+
+sbatch -J breast_random3 --output=breast_random3.out  train_test_v020524_breast_400.sh datasets_24_05_05_Cellbound1_4 mask_gradient_rna_gene2vect_dist_mean_sigma_standard_random3  rna_gene2vect_dist_mean_sigma_standard_random3  6 mask_gradient
+
+
+
+sbatch -J breast_random3 --output=breast_random3.out  train_test_v020524_breast_400.sh datasets_24_05_05_Cellbound1_4 mask_gradient_rna_gene2vect_dist_mean_sigma_standard_npc3  rna_gene2vect_dist_mean_sigma_standard_npc3  6 mask_gradient
