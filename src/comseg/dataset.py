@@ -91,6 +91,28 @@ class ComSegDataset():
     def keys(self):
         return self.list_index
 
+    def convert_spots_coord_in_pixel(self, overwrite = True):
+        """
+        convert the coordinates of the spots in the csv files from µm to pixels using the dict_scale attribute of the dataset object
+
+        :param overwrite: if True, overwrite the csv files with the new coordinates in pixels else save the new csv files with the suffix "_pixel"
+        :type bool
+        :return:
+        """
+        for image_path_df in self.path_dataset_folder.glob('*.csv'):
+            print(f"to pixel coordinates {image_path_df.stem}")
+            df_spots = pd.read_csv(image_path_df)
+
+            df_spots["y"] = (df_spots["y"] / self.dict_scale["y"]).astype(int)
+            df_spots["x"] = (df_spots["x"] / self.dict_scale["x"]).astype(int)
+            if "z" in df_spots.columns:
+                df_spots["z"] = (df_spots["z"] / self.dict_scale["z"]).astype(int)
+            if overwrite:
+                df_spots.to_csv(image_path_df, index=False)
+            else:
+                print(f"nex csv save as {image_path_df.parent /(image_path_df.stem+'_pixel.csv')}")
+                df_spots.to_csv(image_path_df.parent /(image_path_df.stem+'_pixel.csv'), index=False)
+
 
 
     #### fct adding prior
@@ -99,6 +121,7 @@ class ComSegDataset():
                             prior_keys_name = 'in_nucleus',
                             overwrite = False,
                             compute_centroid = False,
+                            regex_df = "*.csv"
                             ):
 
         """
@@ -114,7 +137,7 @@ class ComSegDataset():
         :type bool
         :return: None
         """
-        for image_path_df in self.path_dataset_folder.glob('*.csv'):
+        for image_path_df in self.path_dataset_folder.glob(regex_df):
             print(f"add prior to {image_path_df.stem}")
             df_spots = pd.read_csv(image_path_df)
 
@@ -126,21 +149,23 @@ class ComSegDataset():
                 mask = np.load(self.path_to_mask_prior / (image_path_df.stem + self.mask_file_extension) )
             else:
                 raise ValueError("mask file extension not supported please use image_name.npy or image_name.tif(f)")
-            x_list = list(df_spots.x)
-            y_list = list(df_spots.y)
-            z_list = list(df_spots.z)
-            prior_list = []
 
-            for ix in range(len(z_list)):
-                nuc_index_prior = mask[int(z_list[ix]), int(y_list[ix]), int(x_list[ix])]
-                prior_list.append(nuc_index_prior)
+
+            if "z" in df_spots.columns and len(mask.shape) == 3:
+                pixel_coordinates = (df_spots[["z", "y", "x"]]).astype(int).values
+                prior_list = [mask[z, y, x] for (z, y, x) in pixel_coordinates]
+
+            else:
+                pixel_coordinates = (df_spots[["y",  "x"]]).astype(int).values
+                prior_list = [mask[y, x] for (y, x) in pixel_coordinates]
+
+
             if prior_keys_name in df_spots.columns and overwrite == False:
                 raise Exception(f"prior_keys_name {prior_keys_name} already in df_spots and overwrite is False")
             df_spots[prior_keys_name] = prior_list
             df_spots.to_csv(image_path_df,  index=False)
             print(f"prior added to {image_path_df.stem} and saved in csv file")
 
-            from skimage import measure
 
             if compute_centroid:
                 dict_centroid = compute_dict_centroid(mask_nuclei = mask,
@@ -383,43 +408,3 @@ class ComSegDataset():
 
 
     ### fct adding co-expression matrix
-
-
-if __name__ == "__main__":
-    list_marker_ns =  ['Atp6v0d2', 'Abcg1',# AM
-             'Rtkn2',  'Igfbp2', #AT1
-             'Sftpc','Cxcl15', #AT2,
-            'Cd79a', #B_cells
-             'Ms4a2', 'Fcer1a', #Basophils
-             'Ccdc153', #Ciliated
-             'Scgb3a2', 'Scgb1a1',#Club
-             'Cst3',#DC
-             'Cdh5', 'Clec14a',  #EC
-             'Inmt', 'Pcolce2', # Fibroblasts
-             'C1qc', 'C1qa', 'C1qb', # 'C3ar1', #IM
-             'Upk3b',# Mesotheliocytes
-             'Ifitm6','Plac8',# Monocytes
-            'Ms4a4b', 'Ccl5', 'Hcst', # NK_T_cells
-             'Gzma', 'Ncr1',# NK_cells
-             'S100a9',# Neutrophils
-             'Mmrn1',#Platelets
-           'Acta2','Myh11', # SMC
-             'Cd3g', 'Cd3d' #T_cells
-             ]
-
-    dataset = ComSegDataset(selected_genes = list_marker_ns,
-        path_dataset_folder = "/media/tom/T7/simulation/test_set/dataframes",
-                    path_to_mask_prior = "/media/tom/T7/simulation/test_set/mask",
-                    )
-    dataset.add_prior_from_mask()
-
-    dataset.compute_in_situ_edge(#dict_scale={"x": 0.103, 'y': 0.103, "z": 0.3},  # in micrometer
-            selected_genes=list_marker_ns,
-            images_subset = None,
-            mode="nearest_nn_radius",
-            n_neighbors=25,
-            radius=1,  # in micormeter
-            distance="pearson",
-            per_images=False,
-            sampling=False,
-            sampling_size=100000)

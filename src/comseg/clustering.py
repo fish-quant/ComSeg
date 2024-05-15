@@ -423,14 +423,14 @@ class InSituClustering():
                     param_sctransform=self.param_sctransform
                 )
 
-                list_pred_rna = np.array(self.anndata.obs['leiden_merged'])
+                list_pred_rna = np.array(self.anndata.obs[key_pred])
                 list_pred_rna[index_unclassified] = list_pred_rna_seq
-                self.anndata.obs['leiden_merged'] = list_pred_rna
+                self.anndata.obs[key_pred] = list_pred_rna
             else:
                 print("no small vector to classify")
 
 
-            return self.anndata.obs['leiden_merged']
+            return self.anndata.obs[key_pred]
 
 
 
