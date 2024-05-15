@@ -366,8 +366,9 @@ class ComSegDict():
         label from ``add_cluster_id_to_graph()``
 
 
-        :param path_dict_cell_centroid: If computed already by the ``ComSegDataset`` class from prior Maks leave it None. Otherwise :  Path to the folder containing the centroid dictionary {cell : {z:,y:,x:}}
-                        with each centroid dictionary in a file named as the image name and store in a npy format
+        :param path_dict_cell_centroid: If computed already by the ``ComSegDataset`` class from prior Maks leave it None.
+        Otherwise : path_dict_cell_centroid is a  Path to the folder containing the centroid dictionary {cell : {z:,y:,x:}} for each image.
+                         Each centroid dictionary has to be stored in a file in a npy format,  named as the image name.
         :type path_dict_cell_centroid: str
         :param n_neighbors: number of neighbors to consider for the classification of the centroid (default 15)
         :type n_neighbors: int
