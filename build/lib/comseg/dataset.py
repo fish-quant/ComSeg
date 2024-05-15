@@ -96,14 +96,19 @@ class ComSegDataset():
                 mask = np.load(self.path_to_mask_prior / (image_path_df.stem + self.mask_file_extension) )
             else:
                 raise ValueError("mask file extension not supported")
-            x_list = list(df_spots.x)
-            y_list = list(df_spots.y)
-            z_list = list(df_spots.z)
+            
             prior_list = []
 
-            for ix in range(len(z_list)):
-                nuc_index_prior = mask[z_list[ix], y_list[ix], x_list[ix]]
-                prior_list.append(nuc_index_prior)
+            if "z" in df_spots.columns and len(mask.shape) == 3:
+                microns_to_pixels_ratios = [self.dict_scale["z"], self.dict_scale["y"], self.dict_scale["x"]]
+                pixel_coordinates = (df_spots[["z", "y", "x"]] / microns_to_pixels_ratios).astype(int).values
+                prior_list = [mask[z, y, x] for (z, y, x) in pixel_coordinates]
+
+            else:
+                microns_to_pixels_ratios = [self.dict_scale["y"], self.dict_scale["x"]]
+                pixel_coordinates = (df_spots[["y",  "x"]] / microns_to_pixels_ratios).astype(int).values
+                prior_list = [mask[y, x] for (y, x) in pixel_coordinates]
+
             if prior_keys_name in df_spots.columns and overwrite == False:
                 raise Exception(f"prior_keys_name {prior_keys_name} already in df_spots and overwrite is False")
             df_spots[prior_keys_name] = prior_list
