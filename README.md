@@ -12,7 +12,7 @@ If you have any questions relative to the package or bug, please open an issue i
 
 # ComSeg framework
 
-A detail documentation is available Here https://comseg.readthedocs.io/en/latest/userguide.html
+A detail documentation is available at https://comseg.readthedocs.io/
 
 
 # Single cell spatial RNA profiling 
