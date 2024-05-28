@@ -35,7 +35,7 @@ from .utils import custom_louvain ## for dev mode
 
 __all__ = ["ComSegGraph"]
 
-
+import shapely
 def normal_dist(x , mean , sd):
     prob_density = (np.pi*sd) * np.exp(-0.5*((x-mean)/sd)**2)
     return prob_density
@@ -692,7 +692,8 @@ class ComSegGraph():
                key_cell_pred =  'cell_index_pred',
                 return_polygon = False,
                 alpha = 0.5,
-                min_rna_per_cell = 5
+                min_rna_per_cell = 5,
+                allow_disconnected_polygone = False
                ):
         """
         Generate an anndata storing the estimated expression vector and their spots coordinates
@@ -706,6 +707,7 @@ class ComSegGraph():
         :type alpha: float
         :param min_rna_per_cell: minimum number of RNA to consider a cell
         :type min_rna_per_cell: int
+        :param allow_disconnected_polygone: if True allow disconnected polygon
         :return:
         """
 
@@ -713,7 +715,6 @@ class ComSegGraph():
         dict_cell_genes_coordinate = {}
         dict_cell_genes_name = {}
         dict_cell_genes_mol_index = {}
-        list_cell_centroid = []
         dict_cell_dist2centroid= {}
 
         for cell in self.dict_cell_centroid:
@@ -722,11 +723,7 @@ class ComSegGraph():
             dict_cell_genes_name[cell] = []
             dict_cell_genes_mol_index[cell] = []
             dict_cell_dist2centroid[cell] = []
-            centroid = self.dict_cell_centroid[cell]
-            centroid  = np.array(centroid)
-            if centroid.ndim == 2:
-                centroid = np.mean(centroid, axis=0)
-            list_cell_centroid += [tuple(centroid)]
+
         for node_index, node_data in self.G.nodes(data = True):
             if node_data[self.gene_column] != 'centroid' and node_data[key_cell_pred] != 0:
                 if node_data[key_cell_pred] in dict_cell_genes: ## check that the centroid is indeed in the crop and not only the prior
@@ -743,6 +740,7 @@ class ComSegGraph():
         list_cell_genes_coordinate = []
         list_genes_name = []
         list_gene_index  = []
+        list_cell_centroid = []
         list_gene_dist2centroid = []
         for cell in dict_cell_genes:
             expression_vector = np.bincount(
@@ -758,6 +756,11 @@ class ComSegGraph():
             list_genes_name.append(dict_cell_genes[cell])
             list_gene_index.append(dict_cell_genes_mol_index[cell])
             list_gene_dist2centroid.append(dict_cell_dist2centroid[cell])
+            centroid = self.dict_cell_centroid[cell]
+            centroid  = np.array(centroid)
+            if centroid.ndim == 2:
+                centroid = np.mean(centroid, axis=0)
+            list_cell_centroid += [tuple(centroid)]
 
         anndata = ad.AnnData(np.array(list_expression_vectors))
         anndata.var["features"] = self.selected_genes
@@ -808,6 +811,7 @@ class ComSegGraph():
 
         if not return_polygon:
             return anndata, {}
+        assert min_rna_per_cell > 0, "min_rna_per_cell should be > 0"
 
         list_polygon = []
         dict_polygon = {}
@@ -836,8 +840,23 @@ class ComSegGraph():
         ## Create the json
         json_dict = {"geometries": []}
         for cell in dict_polygon:
-            json_dict["geometries"].append({"type": "Polygon",
-                               "coordinates": [list(dict_polygon[cell].exterior.coords)],
-                                "cell" : cell})
-
+            geometry = dict_polygon[cell]
+            if isinstance(geometry, shapely.geometry.Polygon):
+                json_dict["geometries"].append({
+                    "type": "Polygon",
+                    "coordinates": [list(geometry.exterior.coords)],
+                    "cell": cell
+                })
+            elif isinstance(geometry, shapely.geometry.MultiPolygon):
+                for poly in list(geometry.geoms):
+                    if allow_disconnected_polygone:
+                        json_dict["geometries"].append({
+                            "type": "Polygon",
+                            "coordinates": [list(poly.exterior.coords)],
+                            "cell": cell
+                        })
+                    else:
+                        raise ValueError("disconnected polygon are not allowed change allow_disconnected_polygon=True")
+            else:
+                continue
         return anndata, json_dict

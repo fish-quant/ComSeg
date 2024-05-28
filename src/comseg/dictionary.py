@@ -412,7 +412,7 @@ class ComSegDict():
                     raise ValueError("The file extension of path_cell_centroid is not recognized. Please provide a .npy or .csv file")
             else:
                 if self.dataset.dict_centroid is None:
-                    raise ValueError("The dict_centroid attribute of the dataset is None. Please compute the centroid of the cells first. or provide a path to the centroid dictionary {cell_index: {z:,y:,x:}} for each image.")
+                    raise ValueError("The dict_centroid attribute of the dataset is None.  Compute the centroid of the cells first. or provide a path to the centroid dataframe or dictionary {cell_index: {z:,y:,x:}} for each image.")
                 dict_cell_centroid = self.dataset.dict_centroid[img_name]
 
             self[img_name].classify_centroid(dict_cell_centroid,
@@ -503,4 +503,79 @@ class ComSegDict():
         self.final_anndata.var_names = self.dataset.selected_genes
         self.final_anndata.uns["df_spots"] = dict_df_spots
         return self.final_anndata, dict_json_img
+
+
+
+    def run_all(self,
+                max_cell_radius,
+                ## in situ clutering parameter
+                size_commu_min = 3,
+                norm_vector = False,
+                    ### parameter clustering
+                n_pcs = 3,
+                n_comps = 3,
+                clustering_method = "leiden",
+                n_neighbors = 20,
+                resolution = 1,
+                n_clusters_kmeans = 4,
+                palette = None,
+                nb_min_cluster = 0,
+                min_merge_correlation = 0.8,
+                ### classify centroid
+                path_dataset_folder_centroid=None,
+                file_extension=".csv"
+                ):
+        """
+        function running all the ComSeg steps: (compute_community_vector(),
+        compute_insitu_clustering(), add_cluster_id_to_graph(), classify_centroid(), associate_rna2landmark() )
+        :param max_cell_radius:
+        :param size_commu_min:
+        :param norm_vector:
+        :param n_pcs:
+        :param n_comps:
+        :param clustering_method:
+        :param n_neighbors:
+        :param resolution:
+        :param n_clusters_kmeans:
+        :param palette:
+        :param nb_min_cluster:
+        :param min_merge_correlation:
+        :param path_dataset_folder_centroid:
+        :param file_extension:
+        :return:
+        """
+
+        self.compute_community_vector()
+
+        self.compute_insitu_clustering(
+            size_commu_min=size_commu_min,
+            norm_vector=norm_vector,
+            ### parameter clustering
+            n_pcs=n_pcs,
+            n_comps=n_pcs,
+            clustering_method=clustering_method,
+            n_neighbors=n_neighbors,
+            resolution=resolution,
+            n_clusters_kmeans=n_clusters_kmeans,
+            palette=None,
+            nb_min_cluster=nb_min_cluster,
+            min_merge_correlation=min_merge_correlation,
+        )
+
+        self.add_cluster_id_to_graph(clustering_method="leiden_merged")
+
+        self.classify_centroid(
+            path_cell_centroid=path_dataset_folder_centroid,
+            n_neighbors=15,
+            dict_in_pixel=True,
+            max_dist_centroid=None,
+            key_pred="leiden_merged",
+            distance="ngb_distance_weights",
+            file_extension=file_extension
+        )
+
+        self.associate_rna2landmark(
+            key_pred="leiden_merged",
+            distance='distance',
+            max_cell_radius=max_cell_radius)
 

@@ -143,6 +143,8 @@ class ComSegDataset():
         :type bool
         :return: None
         """
+        if compute_centroid:
+            self.dict_centroid = {}
         for image_path_df in self.path_dataset_folder.glob(regex_df):
             print(f"add prior to {image_path_df.stem}")
             df_spots = pd.read_csv(image_path_df)
@@ -174,12 +176,11 @@ class ComSegDataset():
 
 
             if compute_centroid:
-                self.dict_centroid = {}
                 dict_centroid = compute_dict_centroid(mask_nuclei = mask,
                                                       background=0)
 
                 self.dict_centroid[image_path_df.stem] = dict_centroid
-
+                print(f"dict_centroid added for {image_path_df.stem} ")
 
     ### compute the co-expression matrix
 
