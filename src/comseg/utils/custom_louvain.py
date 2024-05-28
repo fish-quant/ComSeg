@@ -239,23 +239,24 @@ def louvain_partitions(
             graph, inner_partition, resolution=resolution, weight="weight"
         )
         graph = _gen_graph(graph, partition = inner_partition)
-        if new_mod - mod <= threshold:
-            print(f'stop because of threshold {new_mod - mod} inf to {threshold}')
-            return
-        print(f'improvement of modularity {new_mod - mod}')
-        mod = new_mod
         yield [s.copy() for s in partition], graph
 
-        partition, inner_partition, improvement = _one_level(
-            graph=graph,
-            m=m,
-            partition=partition,
-            resolution=resolution,
-            is_directed=is_directed,
-            seed=seed,
-            confidence_level=confidence_level,
-            prior_key="prior_index", ## harcoded prior key name from _gen_graph
-        )
+        if new_mod - mod <= threshold:
+            print(f'stop because of improvement of modularity {new_mod - mod}  below  the threshold  {threshold}')
+            improvement = False
+        else:
+            print(f'improvement of modularity {new_mod - mod}')
+            mod = new_mod
+            partition, inner_partition, improvement = _one_level(
+                graph=graph,
+                m=m,
+                partition=partition,
+                resolution=resolution,
+                is_directed=is_directed,
+                seed=seed,
+                confidence_level=confidence_level,
+                prior_key="prior_index", ## harcoded prior key name from _gen_graph
+            )
         #print(len(partition))
 
 

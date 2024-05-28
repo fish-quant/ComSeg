@@ -11,12 +11,10 @@
 
 
 
-
+import pandas as pd
 import os
 import sys
-
 from tqdm import tqdm
-
 import anndata as ad
 #from model import ComSegGraph
 #import clustering
@@ -64,8 +62,8 @@ class ComSegDict():
         :param prior_name: (optional) Name of the prior cell assignment column the input CSV file. Node with the same prior label will be merged into a super node.
         node with different prior label can not be merged during the modularity optimization.
         :type prior_name: str
-
         """
+
         #:param confidence_level: (experimental) confidence level for the prior knowledge (prior_name) in the range [0,1]. 1 means that the prior knowledge is certain.
         #:type confidence_level: float
         self.dataset = dataset
@@ -177,13 +175,16 @@ class ComSegDict():
         """
         for img_name in tqdm(list(self.dataset)):
             #### GRAPH CREATION
-            comseg_m = ComSegGraph(selected_genes=self.dataset.selected_genes,
-                                         df_spots_label=self.dataset[img_name],
-                                         dict_scale=self.dataset.dict_scale,
-                                         mean_cell_diameter=self.mean_cell_diameter,  # in micrometer
-                                         dict_co_expression=self.dataset.dict_co_expression,
-                                         k_nearest_neighbors=k_nearest_neighbors,
-                                         )
+            comseg_m = ComSegGraph(
+                    selected_genes=self.dataset.selected_genes,
+                    df_spots_label=self.dataset[img_name],
+                    dict_scale=self.dataset.dict_scale,
+                    mean_cell_diameter=self.mean_cell_diameter,  # in micrometer
+                    dict_co_expression=self.dataset.dict_co_expression,
+                    k_nearest_neighbors=k_nearest_neighbors,
+                    gene_column= self.dataset.gene_column,
+                    prior_name=self.prior_name,
+                                   )
             comseg_m.create_graph()
             self[img_name] = comseg_m
 
@@ -276,7 +277,7 @@ class ComSegDict():
                                                           resolution=resolution,
                                                           n_clusters_kmeans=n_clusters_kmeans,
                                                           palette=palette
-                                                        )
+                                                          )
         self.in_situ_clustering.get_cluster_centroid(
             cluster_column_name=clustering_method,
             aggregation_mode="mean")
@@ -352,21 +353,23 @@ class ComSegDict():
     ### Add and classify centroid
 
     def classify_centroid(self,
-                      path_dict_cell_centroid = None,
+                      path_cell_centroid = None,
                       n_neighbors=15,
                       dict_in_pixel=True,
                       max_dist_centroid=None,
                       key_pred="leiden_merged",
                       distance="ngb_distance_weights",
-                        file_extension = "tiff.npy"
-                      ):
+                      file_extension = "tiff.npy",
+                      centroid_csv_key = {"x": "x", "y": "y", "z": "z", "cell_index" : "cell"}
+                          ):
 
         """
         Classify cell centroids based on their  centroid neighbors RNA
         label from ``add_cluster_id_to_graph()``
 
 
-        :param path_dict_cell_centroid: If computed already by the ``ComSegDataset`` class from prior Maks leave it None. Otherwise : path_dict_cell_centroid is a  Path to the folder containing the centroid dictionary {cell : {z:,y:,x:}} for each image.
+        :param path_dict_cell_centroid: If computed already by the ``ComSegDataset`` class from prior Maks leave it None.
+        Otherwise : path_dict_cell_centroid is a  Path to the folder containing the centroid dictionary {cell : {z:,y:,x:}} for each image.
                          Each centroid dictionary has to be stored in a file in a npy format,  named as the image name.
         :type path_dict_cell_centroid: str
         :param n_neighbors: number of neighbors to consider for the classification of the centroid (default 15)
@@ -380,15 +383,36 @@ class ComSegDict():
         :param convex_hull_centroid: check that cell centroid is in the convex hull of its RNA neighbors (default True). If not the cell centroid is not classify to avoid artefact misclassification
         :type convex_hull_centroid: bool
         :param file_extension: file extension of the centroid dictionary
+        :type file_extension: str
+        :param centroid_csv_key: column name  of the centroid csv file
+        :type centroid_csv_key: dict
         :return:
         """
 
 
         for img_name in tqdm(self):
 
-            if path_dict_cell_centroid is not None:
-                dict_cell_centroid = np.load(Path(path_dict_cell_centroid) / (img_name + file_extension), allow_pickle=True).item()
+            if path_cell_centroid is not None:
+                assert self.dataset.dict_centroid is None, "The dict_centroid attribute of the dataset is not None. Please remove it or set it to None."
+                if str(file_extension)[-4:] == ".npy":
+                    dict_cell_centroid = np.load(Path(path_cell_centroid) / (img_name + file_extension), allow_pickle=True).item()
+                elif str(file_extension)[-4:] == ".csv":
+                    df_centroid = pd.read_csv(Path(path_cell_centroid) / (img_name + file_extension))
+                    x_list = list(df_centroid[centroid_csv_key["x"]])
+                    y_list = list(df_centroid["y"])
+                    if "z" in df_centroid.columns:
+                        z_list = list(df_centroid["z"])
+                    cell_list = list(df_centroid[centroid_csv_key["cell_index"]])
+                    if "z" in df_centroid.columns:
+                        dict_cell_centroid = {cell_list[i]:  np.array([ z_list[i], y_list[i], x_list[i]])
+                                                                      for i in range(len(cell_list))}
+                    else:
+                        dict_cell_centroid = {cell_list[i]: {"x": x_list[i], "y": y_list[i]} for i in range(len(cell_list))}
+                else:
+                    raise ValueError("The file extension of path_cell_centroid is not recognized. Please provide a .npy or .csv file")
             else:
+                if self.dataset.dict_centroid is None:
+                    raise ValueError("The dict_centroid attribute of the dataset is None. Please compute the centroid of the cells first. or provide a path to the centroid dictionary {cell_index: {z:,y:,x:}} for each image.")
                 dict_cell_centroid = self.dataset.dict_centroid[img_name]
 
             self[img_name].classify_centroid(dict_cell_centroid,
@@ -405,7 +429,6 @@ class ComSegDict():
 
     def associate_rna2landmark(self,
         key_pred="leiden_merged",
-        prior_name='in_nucleus',
         distance='distance',
         max_cell_radius=100):
         """
@@ -427,12 +450,15 @@ class ComSegDict():
             print(img_name)
             self[img_name].associate_rna2landmark(
                 key_pred=key_pred,
-                prior_name=prior_name,
+                prior_name=self.prior_name,
                 distance=distance,
                 max_cell_radius=max_cell_radius)
 
     def anndata_from_comseg_result(self,
                                    key_cell_pred='cell_index_pred',
+                                   return_polygon=False,
+                                   alpha=0.5,
+                                   min_rna_per_cell=5
                                    ):
 
         """
@@ -440,15 +466,28 @@ class ComSegDict():
 
         :param self:
         :param key_cell_pred: leave it to default
+        :type key_cell_pred: str
+        :param return_polygon: if True return the polygon of the cells
+        :type return_polygon: bool
+        :param alpha: alpha parameter to compute the alphashape polygone : https://pypi.org/project/alphashape/.
+         alpha is between 0 and 1, 1 correspond to the convex hull of the cell
+        :type alpha: float
+        :param min_rna_per_cell: minimum number of RNA to consider a cell
+        :type min_rna_per_cell: int
         :return:
         """
         list_image_name = []
         anndata_list = []
         dict_df_spots = {}
+        dict_json_img = {}
 
         for img_name in tqdm(self):
-            anndata = self[img_name].get_anndata_from_result(
-                key_cell_pred=key_cell_pred)
+            anndata, json_dict = self[img_name].get_anndata_from_result(
+                key_cell_pred=key_cell_pred,
+                return_polygon=return_polygon,
+                alpha=alpha,
+                min_rna_per_cell=min_rna_per_cell)
+            dict_json_img[img_name] = json_dict
 
             anndata_list.append(anndata)
             list_image_name += [img_name] * len(anndata)
@@ -463,5 +502,5 @@ class ComSegDict():
         self.final_anndata.var["features"] = self.dataset.selected_genes
         self.final_anndata.var_names = self.dataset.selected_genes
         self.final_anndata.uns["df_spots"] = dict_df_spots
-        return self.final_anndata
+        return self.final_anndata, dict_json_img
 

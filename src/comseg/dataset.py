@@ -35,11 +35,12 @@ class ComSegDataset():
     """
 
     def __init__(self,
-        path_dataset_folder = None,
+        path_dataset_folder,
         path_to_mask_prior = None,
         mask_file_extension = ".tiff",
         dict_scale={"x": 0.103, 'y': 0.103, "z": 0.3},
-        mean_cell_diameter = 15):
+        mean_cell_diameter = 15,
+       gene_column = "gene"):
 
         """
         :param path_dataset_folder: path to the folder containing the csv files
@@ -55,20 +56,25 @@ class ComSegDataset():
         """
 
         self.path_dataset_folder = Path(path_dataset_folder)
-        self.path_to_mask_prior = Path(path_to_mask_prior)
+        if path_to_mask_prior is not None:
+            self.path_to_mask_prior = Path(path_to_mask_prior)
+        else:
+            self.path_to_mask_prior = None
         self.mask_file_extension = mask_file_extension
         self.path_image_dict = {}
+        self.gene_column = gene_column
+
         unique_gene = []
         for image_path_df in self.path_dataset_folder.glob(f'*.csv'):
             print(f"add {image_path_df.stem}")
             self.path_image_dict[image_path_df.stem] = image_path_df
-            unique_gene += list(pd.read_csv(self.path_image_dict[image_path_df.stem]).gene.unique())
+            unique_gene += list(pd.read_csv(self.path_image_dict[image_path_df.stem])[self.gene_column].unique())
         if len(self.path_image_dict) == 0:
             raise ValueError(f"no csv file found in the dataset folder {self.path_dataset_folder}")
         self.list_index = list(self.path_image_dict.keys())
         self.selected_genes = np.unique(unique_gene)
         self.dict_scale = dict_scale
-        self.dict_centroid = {}
+        self.dict_centroid = None
         self.mean_cell_diameter = mean_cell_diameter
 
     def __getitem__(self, key):
@@ -168,6 +174,7 @@ class ComSegDataset():
 
 
             if compute_centroid:
+                self.dict_centroid = {}
                 dict_centroid = compute_dict_centroid(mask_nuclei = mask,
                                                       background=0)
 
@@ -219,13 +226,13 @@ class ComSegDataset():
             list_coordo_order = list_coordo_order_no_scaling * np.array([self.dict_scale['y'], self.dict_scale['x']])
 
         dico_list_features = {}
-        assert 'gene' in df_spots_label.columns
+        assert self.gene_column in df_spots_label.columns
         for feature in df_spots_label.columns:
             dico_list_features[feature] = list(df_spots_label[feature])
         list_features = list(dico_list_features.keys())
         list_features_order = [(i, {feature: dico_list_features[feature][i] for feature in list_features}) for i in
                                range(len(df_spots_label))]
-        array_gene_indexed = np.array([dico_list_features['gene'][i] for i in range(len(df_spots_label))])
+        array_gene_indexed = np.array([dico_list_features[self.gene_column][i] for i in range(len(df_spots_label))])
 
 
         nbrs = NearestNeighbors(n_neighbors=n_neighbors, algorithm='ball_tree').fit(list_coordo_order)
@@ -394,14 +401,7 @@ class ComSegDataset():
         self.dict_co_expression = dict_co_expression
         return dico_proba_edge, count_matrix
 
-    def _compute_dico_centroid(mask_nuclei, dico_simu=None):
-        dico_nuclei_centroid = {}
-        nuclei_labels = measure.label(mask_nuclei, background=0)
-        for lb in measure.regionprops(nuclei_labels):
-            dico_nuclei_centroid[lb.label] = {}
-            dico_nuclei_centroid[lb.label]['centroid'] = lb.centroid
-            # print(lb.centroid)
-        return dico_nuclei_centroid
+
 
 
 
