@@ -2,8 +2,9 @@
 <img src="./comseg.png" width="650" height="263">
 
 # News
+- Update with comseg 0.0.8. Compatibility with SOPA : https://gustaveroussy.github.io/sopa/
 
-Update with comseg 0.0.7. Computation of the co-expression matrix is now faster.
+- Update with comseg 0.0.7. Computation of the co-expression matrix is now faster.
 
 # Support
 
