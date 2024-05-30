@@ -27,7 +27,7 @@ release = '0.1'
 import sys
 autodoc_mock_imports = ["scanpy", "pyarrow", "anndata", "pandas", "tqdm",
                         "sklearn", "numpy", "networkx", "anndata", "leidenalg", "scikit-image",
-                            "seaborn", "tifffile", "ssam", "scipy", "skimage"]
+                            "seaborn", "tifffile", "ssam", "scipy", "skimage", "shapely"]
 
 autodoc_mock_imports += ["anndata","contourpy","cycler","fonttools","h5py","igraph","imageio",
                          "importlib-metadata","importlib-resources","joblib","kiwisolver","lazy_loader","leidenalg",
