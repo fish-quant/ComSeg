@@ -22,8 +22,7 @@ from sklearn.neighbors import NearestNeighbors
 from scipy.sparse import csr_matrix
 import anndata as ad
 import pandas as pd
-
-
+import alphashape
 
 import networkx.algorithms.community as nx_comm
 import numpy as np
@@ -812,7 +811,6 @@ class ComSegGraph():
             return anndata, {}
         assert min_rna_per_cell > 0, "min_rna_per_cell should be > 0"
 
-        import alphashape
 
         list_polygon = []
         dict_polygon = {}

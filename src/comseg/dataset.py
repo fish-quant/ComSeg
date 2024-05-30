@@ -1,7 +1,4 @@
 
-import os
-import sys
-import networkx as nx
 import numpy as np
 
 import scipy
@@ -12,10 +9,8 @@ import pandas as pd
 from scipy.stats import hypergeom
 from sklearn.neighbors import NearestNeighbors
 from pathlib import Path
-from sklearn.neighbors import radius_neighbors_graph
 #from processing_seg import full_df
 from tqdm import tqdm
-from skimage import measure
 ### dataset class
 from .utils.preprocessing import compute_dict_centroid
 
@@ -40,7 +35,12 @@ class ComSegDataset():
         mask_file_extension = ".tiff",
         dict_scale={"x": 0.103, 'y': 0.103, "z": 0.3},
         mean_cell_diameter = 15,
-       gene_column = "gene"):
+        gene_column = "gene",
+        image_csv_files : list = None,
+        centroid_csv_files : list = None,
+        path_cell_centroid = None,
+        centroid_csv_key={"x": "x", "y": "y", "z": "z", "cell_index": "cell"}
+                 ):
 
         """
         :param path_dataset_folder: path to the folder containing the csv files
@@ -53,6 +53,12 @@ class ComSegDataset():
         :type dict_scale: dict
         :param mean_cell_diameter: the expected mean cell diameter in µm default is 15µm
         :type mean_cell_diameter: float
+        :param gene_column: name of the column containing the gene name in the csv files
+        :type gene_column: str
+        :param image_names_csv_file: list of image name as csv_file to consider in the dataset if None consider all the csv files in the folder
+        :type image_names_csv_file: list
+        :param centroid_name: list of the centroid as to be in the same order as the image_names_csv_file
+        :type centroid_name: list
         """
 
         self.path_dataset_folder = Path(path_dataset_folder)
@@ -61,21 +67,47 @@ class ComSegDataset():
         else:
             self.path_to_mask_prior = None
         self.mask_file_extension = mask_file_extension
-        self.path_image_dict = {}
+        self.dict_scale = dict_scale
+        self.mean_cell_diameter = mean_cell_diameter
         self.gene_column = gene_column
-
+        self.path_image_dict = {}
         unique_gene = []
-        for image_path_df in self.path_dataset_folder.glob(f'*.csv'):
-            print(f"add {image_path_df.stem}")
-            self.path_image_dict[image_path_df.stem] = image_path_df
-            unique_gene += list(pd.read_csv(self.path_image_dict[image_path_df.stem])[self.gene_column].unique())
+        self.image_csv_files = image_csv_files
+        if image_csv_files is not None:
+            for image_name in image_csv_files:
+                image_path_df = Path(path_dataset_folder) / (image_name)
+                ## check if the csv file exists
+                assert image_path_df.exists(), f"{image_name} not found in the dataset folder {path_dataset_folder}"
+                self.path_image_dict[image_path_df.stem] = self.path_dataset_folder / (image_name)
+                unique_gene += list(pd.read_csv(self.path_image_dict[image_path_df.stem])[self.gene_column].unique())
+        else:
+            for image_path_df in self.path_dataset_folder.glob(f'*.csv'):
+                print(f"add {image_path_df.stem}")
+                self.path_image_dict[image_path_df.stem] = image_path_df
+                unique_gene += list(pd.read_csv(self.path_image_dict[image_path_df.stem])[self.gene_column].unique())
         if len(self.path_image_dict) == 0:
             raise ValueError(f"no csv file found in the dataset folder {self.path_dataset_folder}")
         self.list_index = list(self.path_image_dict.keys())
         self.selected_genes = np.unique(unique_gene)
-        self.dict_scale = dict_scale
-        self.dict_centroid = None
-        self.mean_cell_diameter = mean_cell_diameter
+        self.centroid_csv_files = centroid_csv_files
+        if self.centroid_csv_files is not None:
+            assert len(self.centroid_csv_files) == len(self.list_index), "centroid_file_name should have the same length as image_names_csv_file"
+            self.dict_centroid = {}
+            for i in range(len(self.centroid_csv_files)):
+                self.dict_centroid[self.list_index[i]] = self.centroid_csv_files[i]
+
+                df_centroid = pd.read_csv(Path(path_cell_centroid) / (self.centroid_csv_files[i]))
+                x_list = list(df_centroid[centroid_csv_key["x"]])
+                y_list = list(df_centroid["y"])
+                if centroid_csv_key["z"] in df_centroid.columns:
+                    z_list = list(df_centroid["z"])
+                cell_list = list(df_centroid[centroid_csv_key["cell_index"]])
+                if centroid_csv_key["z"] in df_centroid.columns:
+                    self.dict_centroid[self.list_index[i]] = {cell_list[i]: np.array([z_list[i], y_list[i], x_list[i]])
+                                          for i in range(len(cell_list))}
+                else:
+                    self.dict_centroid[self.list_index[i]] = {cell_list[i]: {"x": x_list[i], "y": y_list[i]} for i in range(len(cell_list))}
+                self.dict_centroid[self.list_index[i]]
 
     def __getitem__(self, key):
         if isinstance(key, int):

@@ -12,15 +12,9 @@
 
 
 import pandas as pd
-import os
-import sys
+
 from tqdm import tqdm
 import anndata as ad
-#from model import ComSegGraph
-#import clustering
-#from . import clustering ## for dev mode
-#import model
-#import clustering
 import pickle
 from .clustering import InSituClustering
 from .model import ComSegGraph
@@ -388,7 +382,6 @@ class ComSegDict():
         :type centroid_csv_key: dict
         :return:
         """
-
 
         for img_name in tqdm(self):
 
