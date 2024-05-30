@@ -55,9 +55,9 @@ class ComSegDataset():
         :type mean_cell_diameter: float
         :param gene_column: name of the column containing the gene name in the csv files
         :type gene_column: str
-        :param image_names_csv_file: list of image name as csv_file to consider in the dataset if None consider all the csv files in the folder
+        :param image_names_csv_file: list of image csv file name to consider in the dataset if None consider all the csv files in the folder
         :type image_names_csv_file: list
-        :param centroid_name: list of the centroid as to be in the same order as the image_names_csv_file
+        :param centroid_name: list of the centroid csv file name , as to be in the same order as the image_names_csv_file
         :type centroid_name: list
         """
 
