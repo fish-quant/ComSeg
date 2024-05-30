@@ -11,7 +11,6 @@ return a count matrix of the image
 """
 
 
-import alphashape
 
 #%%
 
@@ -812,6 +811,8 @@ class ComSegGraph():
         if not return_polygon:
             return anndata, {}
         assert min_rna_per_cell > 0, "min_rna_per_cell should be > 0"
+
+        import alphashape
 
         list_polygon = []
         dict_polygon = {}
