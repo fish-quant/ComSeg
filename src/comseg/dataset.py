@@ -156,25 +156,34 @@ class ComSegDataset():
     #### fct adding prior
 
     def add_prior_from_mask(self,
-                            prior_keys_name = 'in_nucleus',
+                            config = None,
+                            prior_name = 'in_nucleus',
                             overwrite = False,
-                            compute_centroid = False,
+                            compute_centroid = True,
                             regex_df = "*.csv"
                             ):
 
         """
 
         This function add prior knowledge to the dataset. It adds a column in the csv files indicating prior label of each spot.
-        It takes the positition of each spot and add the corresponding value of the mask prior at this position.
+        It takes the positition of each spot and add the corresponding value of the segmentation mask prior (.tiff) at this position.
 
-        :param prior_keys_name: name of the column to add in the csv files containing the prior label of each spot
+        :param prior_name: name of the column to add in the csv files containing the prior label of each spot
         :type str
-        :param overwrite: if True, overwrite the prior_keys_name column if it already exists
+        :param overwrite: if True, overwrite the prior_name column if it already exists
         :type bool
         :param compute_centroid : if True, compute the centroid of each cell/nucleus in segmentation mask for to use it for RNA-cell association
         :type bool
         :return: None
         """
+
+        if config is not None:
+            print("config dict overwritting default parameters")
+            prior_name = config.get("prior_name", prior_name)
+            overwrite = config.get("overwrite", overwrite)
+            compute_centroid = config.get("compute_centroid", compute_centroid)
+            regex_df = config.get("regex_df", regex_df)
+
         if compute_centroid:
             self.dict_centroid = {}
         for image_path_df in self.path_dataset_folder.glob(regex_df):
@@ -200,9 +209,9 @@ class ComSegDataset():
                 prior_list = [mask[y, x] for (y, x) in pixel_coordinates]
 
 
-            if prior_keys_name in df_spots.columns and overwrite == False:
-                raise Exception(f"prior_keys_name {prior_keys_name} already in df_spots and overwrite is False")
-            df_spots[prior_keys_name] = prior_list
+            if prior_name in df_spots.columns and overwrite == False:
+                raise Exception(f"prior_name {prior_name} already in df_spots and overwrite is False")
+            df_spots[prior_name] = prior_list
             df_spots.to_csv(image_path_df,  index=False)
             print(f"prior added to {image_path_df.stem} and saved in csv file")
 
@@ -234,6 +243,10 @@ class ComSegDataset():
         :param n_neighbors: maximum number of neighbors default is 40
         :type n_neighbors: int
         :param radius: maximum radius of neighbors. It should be set proportionnaly to expected cell size, default is radius =  mean_cell_diameter / 2
+        :param sampling : if True, sample the dataset to compute the correlation
+        :type sampling: bool
+        :param sampling_size: if sampling is True : number of proximity weighted expression vector to sample
+        :type sampling_size: int
         :return: count_matrix of shape (N_rna,  n_genes) where n_genes is the number of unique genes in df_spots_label
         each row is an 'RNA expression vector' summarizing local expression neighborhood of a molecule
         :rtype: np.array
@@ -362,6 +375,7 @@ class ComSegDataset():
 
     def compute_edge_weight(
             self,
+            config = None,
             images_subset = None,
             n_neighbors=40,
             radius= None ,  # in micormeter
@@ -370,11 +384,15 @@ class ComSegDataset():
             sampling_size=10000,
     remove_self_node = False):
 
+
+
         #print("adapt to when I prune")
 
         """
         compute the gene co-expression correlation at the dataset scale
 
+        :param config: dictionary of parameters to overwrite the default parameters, default is None
+        :type config: dict
         :param images_subset: default None, if not None, only compute the correlation on the images in the list
         :type images_subset: list
         :param n_neighbors:  default 40 ,number of neighbors to consider in the knn graph
@@ -391,6 +409,17 @@ class ComSegDataset():
            - count_matrix - the count matrix used to compute the correlation
         :rtype:  dict, np.array
         """
+
+
+        if config is not None:
+            #print("config dict overwritting default parameters")
+            images_subset = config.get("images_subset", images_subset)
+            n_neighbors = config.get("n_neighbors", n_neighbors)
+            radius = config.get("radius", radius)
+            distance = config.get("distance", distance)
+            sampling = config.get("sampling", sampling)
+            sampling_size = config.get("sampling_size", sampling_size)
+
 
         if radius is None:
             radius = self.mean_cell_diameter / 2
@@ -423,10 +452,10 @@ class ComSegDataset():
             count_matrix = np.concatenate(list_of_count_matrix, axis=0)
         if sampling:
             if len(count_matrix) > sampling_size:
-                print("count_matrix.shape", count_matrix.shape)
-                print(f"sampling {sampling} vectors")
+                #print("count_matrix.shape", count_matrix.shape)
+                #print(f"sampling {sampling} vectors")
                 count_matrix = count_matrix[np.random.choice(count_matrix.shape[0], sampling_size, replace=False), :]
-                print("count_matrix.shape", count_matrix.shape)
+                #print("count_matrix.shape", count_matrix.shape)
 
         dict_co_expression = self.get_dict_proba_edge_in_situ(count_matrix=count_matrix,
                                                           distance=distance,

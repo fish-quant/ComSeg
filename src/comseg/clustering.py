@@ -70,10 +70,10 @@ class InSituClustering():
         count_matrix = self.anndata.X[:, bool_index].toarray()
         count_matrix = count_matrix[row_indice, :]
 
-        print(f'shape count matrix {count_matrix.shape}')
+        #print(f'shape count matrix {count_matrix.shape}')
         np.save("count_matrix", count_matrix)
         count_matrix = pd.DataFrame(count_matrix, columns=[str(e) for e in range(count_matrix.shape[1])])
-        print(count_matrix.columns)
+        #print(count_matrix.columns)
         norm_expression_vectors, param_sctransform = run_sctransform(count_matrix,
                                                                           debug_path=debug_path)
 
@@ -211,7 +211,7 @@ class InSituClustering():
         scrna_unique_clusters = np.unique(list(self.anndata_cluster.obs[cluster_column_name]))
         scrna_centroids = []
         for cl in scrna_unique_clusters:
-            print(cl)
+            #print(cl)
             if aggregation_mode == "median":
                 centroid = np.median(self.anndata_cluster[self.anndata_cluster.obs[cluster_column_name] == cl].X, axis=0)
             else:
@@ -258,7 +258,7 @@ class InSituClustering():
             dist_corr = Z[i, 2]
             if dist_corr > 1 - min_merge_correlation or nb_cluster <= nb_min_cluster:
                 break
-            print(Z[i].round(2))
+            #print(Z[i].round(2))
             c1_to_merge = Z[i, 0]
             c2_to_merge = Z[i, 1]
             new_cluster = len(scrna_centroids) + i
@@ -290,12 +290,8 @@ class InSituClustering():
         for cluster_id in list_ori_leiden:
             new_list_ori_leiden.append(dico_ori_merge[cluster_id])
         self.anndata.obs[column_name] = new_list_ori_leiden
+        print(f"number of cluster after merging {len(dico_merge_ori) }")
 
-        try:
-
-            print(f"number of cluster after merging {len(dico_merge_ori) }")
-        except:
-            print(" no merging done?")
 
         return self.anndata_cluster.obs[column_name]
 

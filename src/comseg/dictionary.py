@@ -368,7 +368,7 @@ class ComSegDict():
         :type path_dict_cell_centroid: str
         :param n_neighbors: number of neighbors to consider for the classification of the centroid (default 15)
         :type n_neighbors: int
-        :param dict_in_pixel: if True the centroid are in pixel and rescal if False the centroid are in um (default True)
+        :param dict_in_pixel: if True the centroid are in the same scale than the input csv of spots coorrdinates and rescale with dict_scale if False the centroid are in um (default True)
         :type dict_in_pixel: bool
         :param max_dist_centroid: maximum distance to consider for the centroid (default None)
         :type max_dist_centroid: int
@@ -424,6 +424,7 @@ class ComSegDict():
         key_pred="leiden_merged",
         distance='distance',
         max_cell_radius=100):
+
         """
         Associate RNAs to landmarks based on the both transcriptomic landscape and the
         distance between the RNAs and the centroids of the landmark
@@ -448,25 +449,28 @@ class ComSegDict():
                 max_cell_radius=max_cell_radius)
 
     def anndata_from_comseg_result(self,
-                                   key_cell_pred='cell_index_pred',
-                                   return_polygon=False,
+                                   config : dict = None,
+                                   min_rna_per_cell=5,
+                                   return_polygon=True,
                                    alpha=0.5,
-                                   min_rna_per_cell=5
+                                   allow_disconnected_polygon=False
                                    ):
 
         """
         Return an anndata with the estimated expression vector of each cell in the dataset plus the spot positions.
 
         :param self:
-        :param key_cell_pred: leave it to default
-        :type key_cell_pred: str
-        :param return_polygon: if True return the polygon of the cells
+        :param config: dictionary of parameters to overwrite the default parameters, default is None
+        :type config: dict
+        :param min_rna_per_cell: minimum number of RNA to consider a cell
+        :type min_rna_per_cell: int
+        :param return_polygon: if True return the polygon of the cells, the polygon are computed using the alphashape library
         :type return_polygon: bool
         :param alpha: alpha parameter to compute the alphashape polygone : https://pypi.org/project/alphashape/.
          alpha is between 0 and 1, 1 correspond to the convex hull of the cell
         :type alpha: float
-        :param min_rna_per_cell: minimum number of RNA to consider a cell
-        :type min_rna_per_cell: int
+        :param allow_disconnected_polygon: if True allow disconnected polygon
+
         :return:
         """
         list_image_name = []
@@ -474,12 +478,20 @@ class ComSegDict():
         dict_df_spots = {}
         dict_json_img = {}
 
+        if config is not None:
+            print("config dict overwritting the default parameters")
+            min_rna_per_cell = config.get("min_rna_per_cell", min_rna_per_cell)
+            return_polygon = config.get("return_polygon", return_polygon)
+            alpha = config.get("alpha", alpha)
+            allow_disconnected_polygon = config.get("allow_disconnected_polygon", allow_disconnected_polygon)
+
         for img_name in tqdm(self):
             anndata, json_dict = self[img_name].get_anndata_from_result(
-                key_cell_pred=key_cell_pred,
+                key_cell_pred='cell_index_pred',
+                min_rna_per_cell=min_rna_per_cell,
                 return_polygon=return_polygon,
                 alpha=alpha,
-                min_rna_per_cell=min_rna_per_cell)
+                allow_disconnected_polygon=allow_disconnected_polygon)
             dict_json_img[img_name] = json_dict
 
             anndata_list.append(anndata)
@@ -500,45 +512,75 @@ class ComSegDict():
 
 
     def run_all(self,
-                max_cell_radius,
+                config : dict = None,
+                k_nearest_neighbors: int = 10,
+                max_cell_radius : float = 15,
                 ## in situ clutering parameter
-                size_commu_min = 3,
-                norm_vector = False,
-                    ### parameter clustering
-                n_pcs = 3,
-                n_comps = 3,
-                clustering_method = "leiden",
-                n_neighbors = 20,
-                resolution = 1,
+                size_commu_min : int | int  = 3,
+                norm_vector : bool = False,
+                n_pcs : int = 3,
+                clustering_method : str | str = "leiden",
+                n_neighbors : int | int = 20,
+                resolution  : float | float = 1,
                 n_clusters_kmeans = 4,
-                palette = None,
-                nb_min_cluster = 0,
-                min_merge_correlation = 0.8,
+                nb_min_cluster : int | int = 0,
+                min_merge_correlation : float | float = 0.8,
                 ### classify centroid
-                path_dataset_folder_centroid=None,
-                file_extension=".csv"
+                path_dataset_folder_centroid: str | str =None,
+                file_extension: str | str = ".csv",
                 ):
         """
         function running all the ComSeg steps: (compute_community_vector(),
         compute_insitu_clustering(), add_cluster_id_to_graph(), classify_centroid(), associate_rna2landmark() )
-        :param max_cell_radius:
-        :param size_commu_min:
-        :param norm_vector:
-        :param n_pcs:
-        :param n_comps:
-        :param clustering_method:
-        :param n_neighbors:
-        :param resolution:
-        :param n_clusters_kmeans:
-        :param palette:
-        :param nb_min_cluster:
-        :param min_merge_correlation:
-        :param path_dataset_folder_centroid:
-        :param file_extension:
+        :param config: dictionary of parameters to overwrite the default parameters, default is None
+        :type config: dict
+        :param k_nearest_neighbors: number of nearest neighbors to consider for the KNN graph creation, reduce K to speed computation
+        :type k_nearest_neighbors: int
+        :param max_cell_radius: maximum distance between a cell centroid and an RNA to be associated
+        :type max_cell_radius: float
+        :param size_commu_min: minimum number of RNA in a community to be considered for the clustering (default 3)
+        :type size_commu_min: int
+        :param norm_vector: if True, the expression vector will be normalized using the scTRANSFORM normalization parameters, the normaliztion requires the following R package : sctransform, feather, arrow
+        The normalization is important to do on dataset with a high number of gene.
+        :type norm_vector: bool
+        :param n_pcs: number of principal component to compute for the clustering of the RNA communities expression vector; Lets 0 if no pca
+        :type n_pcs: int
+        :param clustering_method: choose in ["leiden", "kmeans", "louvain"]
+        :type clustering_method: str
+        :param n_neighbors: number of neighbors similarity graph of the RNA communities expression vector clustering
+        :type n_neighbors: int
+        :param resolution:  resolution paramter  for the in-situ-clustering step if louvain or leiden are used
+        :type resolution: float
+        :param n_clusters_kmeans: number of cluster for the kmeans clustering for ```clustering_method```= "kmeans"
+        :type n_clusters_kmeans: int
+        :param nb_min_cluster: minimum number of cluster to keep after the merge of the cluster
+        :type nb_min_cluster: int
+        :param min_merge_correlation: minimum correlation to merge cluster in the in situ clustering
+        :type min_merge_correlation: float
+        :param path_dataset_folder_centroid: path to the folder containing the centroid in a csv or dictionary {cell : {z:,y:,x:}} for each image, use the same scale than then input csv
+        :type path_dataset_folder_centroid: str
+        :param file_extension: file extension of the centroid dictionary (.npy) or csv file (.csv)
+        :type file_extension: str
         :return:
         """
+        if config is not None:
+            #print("config dict overwritting the default parameter")
+            k_nearest_neighbors = config.get("k_nearest_neighbors", k_nearest_neighbors)
+            max_cell_radius = config.get("max_cell_radius", max_cell_radius)
+            size_commu_min = config.get("size_commu_min", size_commu_min)
+            norm_vector = config.get("norm_vector", norm_vector)
+            n_pcs = config.get("n_pcs", n_pcs)
+            clustering_method = config.get("clustering_method", clustering_method)
+            n_neighbors = config.get("n_neighbors", n_neighbors)
+            resolution = config.get("resolution", resolution)
+            n_clusters_kmeans = config.get("n_clusters_kmeans", n_clusters_kmeans)
+            nb_min_cluster = config.get("nb_min_cluster", nb_min_cluster)
+            min_merge_correlation = config.get("min_merge_correlation", min_merge_correlation)
+            path_dataset_folder_centroid = config.get("path_dataset_folder_centroid", path_dataset_folder_centroid)
+            file_extension = config.get("file_extension", file_extension)
 
-        self.compute_community_vector()
+
+        self.compute_community_vector(k_nearest_neighbors = k_nearest_neighbors)
 
         self.compute_insitu_clustering(
             size_commu_min=size_commu_min,
@@ -561,7 +603,6 @@ class ComSegDict():
             path_cell_centroid=path_dataset_folder_centroid,
             n_neighbors=15,
             dict_in_pixel=True,
-            max_dist_centroid=None,
             key_pred="leiden_merged",
             distance="ngb_distance_weights",
             file_extension=file_extension

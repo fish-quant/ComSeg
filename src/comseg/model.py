@@ -691,7 +691,7 @@ class ComSegGraph():
                 return_polygon = False,
                 alpha = 0.5,
                 min_rna_per_cell = 5,
-                allow_disconnected_polygone = False
+                allow_disconnected_polygon = False
                ):
         """
         Generate an anndata storing the estimated expression vector and their spots coordinates
@@ -705,7 +705,7 @@ class ComSegGraph():
         :type alpha: float
         :param min_rna_per_cell: minimum number of RNA to consider a cell
         :type min_rna_per_cell: int
-        :param allow_disconnected_polygone: if True allow disconnected polygon
+        :param allow_disconnected_polygon: if True allow disconnected polygon
         :return:
         """
 
@@ -855,7 +855,7 @@ class ComSegGraph():
                             "cell": cell
                         })
                     else:
-                        raise ValueError("disconnected polygon are not allowed change allow_disconnected_polygon=True")
+                        raise ValueError("disconnected polygons are not allowed, change allow_disconnected_polygon=True")
             else:
                 continue
         return anndata, json_dict
