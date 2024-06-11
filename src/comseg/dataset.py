@@ -1,4 +1,3 @@
-
 import numpy as np
 
 import scipy
@@ -15,8 +14,6 @@ from tqdm import tqdm
 from .utils.preprocessing import compute_dict_centroid
 
 
-
-
 class ComSegDataset():
     """
     this class is in charge of :
@@ -30,16 +27,16 @@ class ComSegDataset():
     """
 
     def __init__(self,
-        path_dataset_folder,
-        path_to_mask_prior = None,
-        mask_file_extension = ".tiff",
-        dict_scale={"x": 0.103, 'y': 0.103, "z": 0.3},
-        mean_cell_diameter = 15,
-        gene_column = "gene",
-        image_csv_files : list = None,
-        centroid_csv_files : list = None,
-        path_cell_centroid = None,
-        centroid_csv_key={"x": "x", "y": "y", "z": "z", "cell_index": "cell"}
+                 path_dataset_folder,
+                 path_to_mask_prior=None,
+                 mask_file_extension=".tiff",
+                 dict_scale={"x": 0.103, 'y': 0.103, "z": 0.3},
+                 mean_cell_diameter=15,
+                 gene_column="gene",
+                 image_csv_files: list = None,
+                 centroid_csv_files: list = None,
+                 path_cell_centroid=None,
+                 centroid_csv_key={"x": "x", "y": "y", "z": "z", "cell_index": "cell"}
                  ):
 
         """
@@ -91,7 +88,8 @@ class ComSegDataset():
         self.selected_genes = np.unique(unique_gene)
         self.centroid_csv_files = centroid_csv_files
         if self.centroid_csv_files is not None:
-            assert len(self.centroid_csv_files) == len(self.list_index), "centroid_file_name should have the same length as image_names_csv_file"
+            assert len(self.centroid_csv_files) == len(
+                self.list_index), "centroid_file_name should have the same length as image_names_csv_file"
             self.dict_centroid = {}
             for i in range(len(self.centroid_csv_files)):
                 self.dict_centroid[self.list_index[i]] = self.centroid_csv_files[i]
@@ -104,9 +102,10 @@ class ComSegDataset():
                 cell_list = list(df_centroid[centroid_csv_key["cell_index"]])
                 if centroid_csv_key["z"] in df_centroid.columns:
                     self.dict_centroid[self.list_index[i]] = {cell_list[i]: np.array([z_list[i], y_list[i], x_list[i]])
-                                          for i in range(len(cell_list))}
+                                                              for i in range(len(cell_list))}
                 else:
-                    self.dict_centroid[self.list_index[i]] = {cell_list[i]: {"x": x_list[i], "y": y_list[i]} for i in range(len(cell_list))}
+                    self.dict_centroid[self.list_index[i]] = {cell_list[i]: {"x": x_list[i], "y": y_list[i]} for i in
+                                                              range(len(cell_list))}
                 self.dict_centroid[self.list_index[i]]
 
     def __getitem__(self, key):
@@ -120,7 +119,7 @@ class ComSegDataset():
         return len(list(self.path_dataset_folder.glob('*.csv')))
 
     def __iter__(self):
-        for x in self.list_index :
+        for x in self.list_index:
             yield x
 
     def __repr__(self):
@@ -129,7 +128,7 @@ class ComSegDataset():
     def keys(self):
         return self.list_index
 
-    def convert_spots_coord_in_pixel(self, overwrite = True):
+    def convert_spots_coord_in_pixel(self, overwrite=True):
         """
         convert the coordinates of the spots in the csv files from µm to pixels using the dict_scale attribute of the dataset object
 
@@ -148,19 +147,17 @@ class ComSegDataset():
             if overwrite:
                 df_spots.to_csv(image_path_df, index=False)
             else:
-                print(f"nex csv save as {image_path_df.parent /(image_path_df.stem+'_pixel.csv')}")
-                df_spots.to_csv(image_path_df.parent /(image_path_df.stem+'_pixel.csv'), index=False)
-
-
+                print(f"nex csv save as {image_path_df.parent / (image_path_df.stem + '_pixel.csv')}")
+                df_spots.to_csv(image_path_df.parent / (image_path_df.stem + '_pixel.csv'), index=False)
 
     #### fct adding prior
 
     def add_prior_from_mask(self,
-                            config = None,
-                            prior_name = 'in_nucleus',
-                            overwrite = False,
-                            compute_centroid = True,
-                            regex_df = "*.csv"
+                            config=None,
+                            prior_name='in_nucleus',
+                            overwrite=False,
+                            compute_centroid=True,
+                            regex_df="*.csv"
                             ):
 
         """
@@ -190,34 +187,32 @@ class ComSegDataset():
             print(f"add prior to {image_path_df.stem}")
             df_spots = pd.read_csv(image_path_df)
 
-            assert (self.path_to_mask_prior / (image_path_df.stem + self.mask_file_extension)  ).exists(), f"no mask prior found for {image_path_df.stem}"
+            assert (self.path_to_mask_prior / (
+                        image_path_df.stem + self.mask_file_extension)).exists(), f"no mask prior found for {image_path_df.stem}"
 
-            if 'tif' in self.mask_file_extension[-4:] :
-                mask = tifffile.imread(self.path_to_mask_prior / (image_path_df.stem + self.mask_file_extension) )
+            if 'tif' in self.mask_file_extension[-4:]:
+                mask = tifffile.imread(self.path_to_mask_prior / (image_path_df.stem + self.mask_file_extension))
             elif 'npy' in self.mask_file_extension[-4:]:
-                mask = np.load(self.path_to_mask_prior / (image_path_df.stem + self.mask_file_extension) )
+                mask = np.load(self.path_to_mask_prior / (image_path_df.stem + self.mask_file_extension))
             else:
                 raise ValueError("mask file extension not supported please use image_name.npy or image_name.tif(f)")
-
 
             if "z" in df_spots.columns and len(mask.shape) == 3:
                 pixel_coordinates = (df_spots[["z", "y", "x"]]).astype(int).values
                 prior_list = [mask[z, y, x] for (z, y, x) in pixel_coordinates]
 
             else:
-                pixel_coordinates = (df_spots[["y",  "x"]]).astype(int).values
+                pixel_coordinates = (df_spots[["y", "x"]]).astype(int).values
                 prior_list = [mask[y, x] for (y, x) in pixel_coordinates]
-
 
             if prior_name in df_spots.columns and overwrite == False:
                 raise Exception(f"prior_name {prior_name} already in df_spots and overwrite is False")
             df_spots[prior_name] = prior_list
-            df_spots.to_csv(image_path_df,  index=False)
+            df_spots.to_csv(image_path_df, index=False)
             print(f"prior added to {image_path_df.stem} and saved in csv file")
 
-
             if compute_centroid:
-                dict_centroid = compute_dict_centroid(mask_nuclei = mask,
+                dict_centroid = compute_dict_centroid(mask_nuclei=mask,
                                                       background=0)
 
                 self.dict_centroid[image_path_df.stem] = dict_centroid
@@ -229,11 +224,10 @@ class ComSegDataset():
                                       df_spots_label,
                                       n_neighbors=5,
                                       radius=None,
-                                      remove_self_node = False,
+                                      remove_self_node=False,
                                       sampling=True,
                                       sampling_size=10000
                                       ):
-
 
         """
         Compute the co-expression score matrix for the RNA spatial distribution
@@ -254,14 +248,12 @@ class ComSegDataset():
 
         gene_index_dico = {}
         for gene_id in range(len(self.selected_genes)):
-            gene_index_dico[self.selected_genes[gene_id]] = gene_id #todo gene_index_dico to add in self
+            gene_index_dico[self.selected_genes[gene_id]] = gene_id  #todo gene_index_dico to add in self
         ## this part should be factorize with create_directed_nn_graph
         try:
             df_spots_label = df_spots_label.reset_index()
         except Exception as e:
             print(e)
-
-
 
         if "z" in df_spots_label.columns:
             list_coordo_order_no_scaling = np.array([df_spots_label.z, df_spots_label.y, df_spots_label.x]).T
@@ -280,13 +272,11 @@ class ComSegDataset():
                                range(len(df_spots_label))]
         array_gene_indexed = np.array([dico_list_features[self.gene_column][i] for i in range(len(df_spots_label))])
 
-
         nbrs = NearestNeighbors(n_neighbors=n_neighbors, algorithm='ball_tree').fit(list_coordo_order)
         ad = nbrs.kneighbors_graph(list_coordo_order)  ## can be optimize here
         distance = nbrs.kneighbors_graph(list_coordo_order, mode='distance')
         ad[distance > radius] = 0
         ad.eliminate_zeros()
-
 
         rows, cols, BOL = sp.find(ad == 1)
 
@@ -306,7 +296,7 @@ class ComSegDataset():
             expression_vector = np.zeros(len(self.selected_genes))
             for str_gene_index in range(len(vectors_gene)):
                 str_gene = vectors_gene[str_gene_index]
-                expression_vector[gene_index_dico[str_gene]] += (radius  - 1 *  vector_distance[str_gene_index]) / radius
+                expression_vector[gene_index_dico[str_gene]] += (radius - 1 * vector_distance[str_gene_index]) / radius
             list_expression_vec.append(expression_vector)
         count_matrix = np.array(list_expression_vec)
 
@@ -375,16 +365,14 @@ class ComSegDataset():
 
     def compute_edge_weight(
             self,
-            config = None,
-            images_subset = None,
+            config=None,
+            images_subset=None,
             n_neighbors=40,
-            radius= None ,  # in micormeter
+            radius=None,  # in micormeter
             distance="pearson",
             sampling=True,
             sampling_size=10000,
-    remove_self_node = False):
-
-
+            remove_self_node=False):
 
         #print("adapt to when I prune")
 
@@ -410,7 +398,6 @@ class ComSegDataset():
         :rtype:  dict, np.array
         """
 
-
         if config is not None:
             #print("config dict overwritting default parameters")
             images_subset = config.get("images_subset", images_subset)
@@ -419,7 +406,6 @@ class ComSegDataset():
             distance = config.get("distance", distance)
             sampling = config.get("sampling", sampling)
             sampling_size = config.get("sampling_size", sampling_size)
-
 
         if radius is None:
             radius = self.mean_cell_diameter / 2
@@ -440,14 +426,13 @@ class ComSegDataset():
             df_spots_label = pd.read_csv(self.path_image_dict[image_name])
             #print(df_spots_label)
 
-
             print("image name : ", image_name)
             count_matrix = self.count_matrix_in_situ_from_knn(df_spots_label=df_spots_label,  # df_spots_label,
-                                                         n_neighbors=n_neighbors,
-                                                         radius=radius,
-                                                        remove_self_node=remove_self_node,
+                                                              n_neighbors=n_neighbors,
+                                                              radius=radius,
+                                                              remove_self_node=remove_self_node,
                                                               sampling=True,
-                                                              sampling_size=int(sampling_size/len(list_img) +1))
+                                                              sampling_size=int(sampling_size / len(list_img) + 1))
             list_of_count_matrix.append(count_matrix)
             count_matrix = np.concatenate(list_of_count_matrix, axis=0)
         if sampling:
@@ -458,15 +443,9 @@ class ComSegDataset():
                 #print("count_matrix.shape", count_matrix.shape)
 
         dict_co_expression = self.get_dict_proba_edge_in_situ(count_matrix=count_matrix,
-                                                          distance=distance,
-                                                          )
+                                                              distance=distance,
+                                                              )
         self.dict_co_expression = dict_co_expression
         return dico_proba_edge, count_matrix
-
-
-
-
-
-
 
     ### fct adding co-expression matrix

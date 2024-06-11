@@ -1,9 +1,4 @@
-
-
-
-
 import sklearn
-
 
 import anndata as ad
 import numpy as np
@@ -21,8 +16,6 @@ from .utils.preprocessing import sctransform_from_parameters
 __all__ = ["InSituClustering"]
 
 
-
-
 class InSituClustering():
     """
     In situ clustering class takes as attribute an anndata object containing the community expression vectors :math:`V_c`
@@ -31,8 +24,8 @@ class InSituClustering():
     """
 
     def __init__(self,
-                anndata,
-                 selected_genes,):
+                 anndata,
+                 selected_genes, ):
         """
         :param anndata: anndata object containing the expression vector of the community.
                 The anndata can be the concatenation of several anndata object from different ComSeg instance
@@ -45,11 +38,11 @@ class InSituClustering():
 
         self.anndata = anndata  ## contain the expression vector of all commu
         self.selected_genes = selected_genes
-        self.anndata_cluster = None ## contain the expression vector of the cluster commu ie more than x RNA
+        self.anndata_cluster = None  ## contain the expression vector of the cluster commu ie more than x RNA
         #self.anndata.var.index = self.anndata.var.index.astype(str)
 
     def compute_normalization_parameters(self,
-                                         debug_path = None):
+                                         debug_path=None):
         """
 
         Compute the ScTransform normalization parameters from the class attribute anndata
@@ -75,29 +68,26 @@ class InSituClustering():
         count_matrix = pd.DataFrame(count_matrix, columns=[str(e) for e in range(count_matrix.shape[1])])
         #print(count_matrix.columns)
         norm_expression_vectors, param_sctransform = run_sctransform(count_matrix,
-                                                                          debug_path=debug_path)
+                                                                     debug_path=debug_path)
 
         self.param_sctransform = param_sctransform
         self.genes_to_take = bool_index
 
-
-
         return norm_expression_vectors, param_sctransform
-
 
     def cluster_rna_community(self,
                               size_commu_min=3,
-                              norm_vector = True,
+                              norm_vector=True,
 
                               ### parameter clustering
-                              n_pcs = 15,
-                              n_comps =15,
-                              clustering_method ="leiden",
-                              n_neighbors = 20,
-                              resolution = 1,
-                              n_clusters_kmeans = 4,
-                              palette = None,
-                              plot_umap = False):
+                              n_pcs=15,
+                              n_comps=15,
+                              clustering_method="leiden",
+                              n_neighbors=20,
+                              resolution=1,
+                              n_clusters_kmeans=4,
+                              palette=None,
+                              plot_umap=False):
 
         """
         Cluster the RNA partition/community expression vector to identify the single cell transcriptomic cluster present in the dataset
@@ -128,18 +118,18 @@ class InSituClustering():
 
         bool_index_row = np.array(self.anndata.obs['nb_rna']) > size_commu_min
 
-
-        if norm_vector: ## apply sctrasnform
-            if not  hasattr(self, "param_sctransform"):
-                raise ValueError("You need to compute the normalization parameters with 'compute_normalization_parameters' before clustering ")
+        if norm_vector:  ## apply sctrasnform
+            if not hasattr(self, "param_sctransform"):
+                raise ValueError \
+                    ("You need to compute the normalization parameters with 'compute_normalization_parameters' before clustering ")
             #self.anndata.obs.index = self.anndata.obs.index.astype(str)
             #self.anndata.var.index = self.anndata.var.index.astype(str)
             anndata = self.anndata[bool_index_row, self.genes_to_take]
             count_matrix_anndata = sctransform_from_parameters(self.param_sctransform,
-                    anndata.X.toarray())
+                                                               anndata.X.toarray())
             new_selected_genes = self.norm_genes
         else:
-            count_matrix_anndata = self.anndata[bool_index_row, : ].X.toarray()
+            count_matrix_anndata = self.anndata[bool_index_row, :].X.toarray()
             #bool_index_row = [True] * len(self.anndata)
             new_selected_genes = self.selected_genes
 
@@ -179,23 +169,19 @@ class InSituClustering():
                 print("umap not computed")
         print(f"number of cluster {len(np.unique(adata.obs[clustering_method]))}")
 
-
-        ## add labeled cluster to self anndata
+        # add labeled cluster to self anndata
 
         cluster_label = np.array(['-1'] * len(self.anndata))
         cluster_label[bool_index_row] = adata.obs[clustering_method]
-
 
         self.anndata.obs[clustering_method] = cluster_label
         self.anndata_cluster = adata
 
         return self.anndata
 
-
-
-    def get_cluster_centroid(self, ## withput normalization but
-                      cluster_column_name = "leiden",
-                       aggregation_mode = "mean"):
+    def get_cluster_centroid(self,  # withput normalization but
+                             cluster_column_name="leiden",
+                             aggregation_mode="mean"):
         """
         Compute the centroid of each transcriptomic cluster
 
@@ -211,15 +197,15 @@ class InSituClustering():
         scrna_unique_clusters = np.unique(list(self.anndata_cluster.obs[cluster_column_name]))
         scrna_centroids = []
         for cl in scrna_unique_clusters:
-            #print(cl)
+            ## print(cl)
             if aggregation_mode == "median":
-                centroid = np.median(self.anndata_cluster[self.anndata_cluster.obs[cluster_column_name] == cl].X, axis=0)
+                centroid = np.median(self.anndata_cluster[self.anndata_cluster.obs[cluster_column_name] == cl].X,
+                                     axis=0)
             else:
                 assert aggregation_mode == "mean"
                 centroid = np.mean(self.anndata_cluster[self.anndata_cluster.obs[cluster_column_name] == cl].X, axis=0)
-        # print(mean)
+            # print(mean)
             scrna_centroids.append(np.asarray(centroid)[0])
-
 
         #eee
         self.scrna_centroids = np.array(scrna_centroids)
@@ -227,10 +213,10 @@ class InSituClustering():
 
         return self.scrna_centroids, self.scrna_unique_clusters
 
-    def merge_cluster(self, nb_min_cluster = 0,
-                      min_merge_correlation = 0.8,
+    def merge_cluster(self, nb_min_cluster=0,
+                      min_merge_correlation=0.8,
                       cluster_column_name="leiden",
-                      plot = True):
+                      plot=True):
         """
         Merge clusters based on the correlation of their centroid
 
@@ -276,8 +262,8 @@ class InSituClustering():
         dico_ori_merge['-1'] = '-1'
         dico_merge_ori['-1'] = '-1'
 
-        self.dico_merge_ori = dico_merge_ori #todo erase this name
-        self.dico_ori_merge = dico_ori_merge #todo erase this name
+        self.dico_merge_ori = dico_merge_ori  #todo erase this name
+        self.dico_ori_merge = dico_ori_merge  #todo erase this name
         column_name = cluster_column_name + '_merged'
         new_list_ori_leiden = []
         for cluster_id in list_ori_leiden:
@@ -290,13 +276,12 @@ class InSituClustering():
         for cluster_id in list_ori_leiden:
             new_list_ori_leiden.append(dico_ori_merge[cluster_id])
         self.anndata.obs[column_name] = new_list_ori_leiden
-        print(f"number of cluster after merging {len(dico_merge_ori) }")
-
+        print(f"number of cluster after merging {len(dico_merge_ori)}")
 
         return self.anndata_cluster.obs[column_name]
 
     def classify_by_nn(self,
-                        array_of_vect,
+                       array_of_vect,
                        pca_model,
                        kn_neighb,
                        min_proba=0.5,
@@ -354,13 +339,13 @@ class InSituClustering():
         return norm_expression_vectors, proba, list_pred_rna_seq
 
     def classify_small_community(self,
-        #size_commu_min_classif = 0,
-        key_pred = "leiden_merged",
-       # unorm_vector_key = "unorm_vector",
-        classify_mode = "pca",
-       # min_correlation = 0,
-        min_proba_small_commu = 0,
-          ):
+                                 #size_commu_min_classif = 0,
+                                 key_pred="leiden_merged",
+                                 # unorm_vector_key = "unorm_vector",
+                                 classify_mode="pca",
+                                 # min_correlation = 0,
+                                 min_proba_small_commu=0,
+                                 ):
 
         #todo remove small community
         """
@@ -401,20 +386,19 @@ class InSituClustering():
 
                 ## get_index of unclassify community index
 
-
             bool_index_unclassified = np.logical_and(np.array(self.anndata.obs[key_pred]) == '-1',
-                                                    np.sum(self.anndata.X.toarray(), axis= 1) != 0)
+                                                     np.sum(self.anndata.X.toarray(), axis=1) != 0)
             index_unclassified = np.nonzero(bool_index_unclassified)[0]
             ## get unclassified community  expression vector
             unclassified_vector = self.anndata[index_unclassified,
-                                  self.genes_to_take].X.toarray()
+            self.genes_to_take].X.toarray()
 
             if len(unclassified_vector) > 0 and np.sum(unclassified_vector) > 0:
                 ## classify unclassified community
                 norm_expression_vectors, proba, list_pred_rna_seq = self.classify_by_nn(
-                    array_of_vect = unclassified_vector,
-                    pca_model = pca_model,
-                    kn_neighb =     kn_neighb,
+                    array_of_vect=unclassified_vector,
+                    pca_model=pca_model,
+                    kn_neighb=kn_neighb,
                     min_proba=min_proba_small_commu,
                     param_sctransform=self.param_sctransform
                 )
@@ -425,18 +409,4 @@ class InSituClustering():
             else:
                 print("no small vector to classify")
 
-
             return self.anndata.obs[key_pred]
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -1,6 +1,3 @@
-
-
-
 """
 class model, compute the graph
 apply community detection
@@ -9,8 +6,6 @@ add centroid from the dataset in the graph
 apply dikstra to compute the distance between the centroid and the other nodes
 return a count matrix of the image
 """
-
-
 
 #%%
 
@@ -28,19 +23,19 @@ import networkx.algorithms.community as nx_comm
 import numpy as np
 from sklearn.utils.extmath import weighted_mode
 from scipy.spatial import ConvexHull, Delaunay
-from .utils import custom_louvain ## for dev mode
-
+from .utils import custom_louvain  ## for dev mode
 
 __all__ = ["ComSegGraph"]
 
 import shapely
-def normal_dist(x , mean , sd):
-    prob_density = (np.pi*sd) * np.exp(-0.5*((x-mean)/sd)**2)
-    return prob_density
+
+
+#def normal_dist(x, mean, sd):
+#    prob_density = (np.pi * sd) * np.exp(-0.5 * ((x - mean) / sd) ** 2)
+#    return prob_density
 
 
 class ComSegGraph():
-
     """
     Class to the generate the graph of RNA spots from a CSV file/image
     this class is in charge of :
@@ -55,18 +50,16 @@ class ComSegGraph():
     """
 
     def __init__(self,
-                df_spots_label,
-                selected_genes,
+                 df_spots_label,
+                 selected_genes,
                  dict_co_expression,
-                dict_scale={"x": 0.103, 'y': 0.103, "z": 0.3},  # in micrometer
-                mean_cell_diameter=15,  # in micrometer
-                k_nearest_neighbors = 10,
-                edge_max_length = None,
-                gene_column = "gene",
-                 prior_name = "in_nucleus",
+                 dict_scale={"x": 0.103, 'y': 0.103, "z": 0.3},  # in micrometer
+                 mean_cell_diameter=15,  # in micrometer
+                 k_nearest_neighbors=10,
+                 edge_max_length=None,
+                 gene_column="gene",
+                 prior_name="in_nucleus",
                  ):
-
-
 
         """
         :param df_spots_label: dataframe of the spots with column x,y,z, gene and optionally the prior label column
@@ -83,8 +76,6 @@ class ComSegGraph():
         :type edge_max_length: float
         """
 
-
-
         self.df_spots_label = df_spots_label
         self.dict_co_expression = dict_co_expression
         self.dict_scale = dict_scale
@@ -96,9 +87,9 @@ class ComSegGraph():
         self.gene_index_dict = {}
         for gene_id in range(len(selected_genes)):
             self.gene_index_dict[selected_genes[gene_id]] = gene_id
-        self.agg_sd =  1
-        self.agg_max_dist = mean_cell_diameter/2
-        self.dico_xyz_index = {"x": 2, "y":1, "z":0 }
+        self.agg_sd = 1
+        self.agg_max_dist = mean_cell_diameter / 2
+        self.dico_xyz_index = {"x": 2, "y": 1, "z": 0}
         self.mean_cell_diameter = mean_cell_diameter
         self.gene_column = gene_column
         self.prior_name = prior_name
@@ -119,7 +110,8 @@ class ComSegGraph():
             print(e)
 
         if "z" in self.df_spots_label.columns:  ## you should do ZYX every where it is error prone, function to chenge : this one rna nuclei assoctioan
-            list_coordo_order_no_scaling = np.array([self.df_spots_label.z, self.df_spots_label.y, self.df_spots_label.x]).T
+            list_coordo_order_no_scaling = np.array \
+                ([self.df_spots_label.z, self.df_spots_label.y, self.df_spots_label.x]).T
             list_coordo_order = list_coordo_order_no_scaling * np.array([self.dict_scale['z'],
                                                                          self.dict_scale['y'],
                                                                          self.dict_scale["x"]])
@@ -129,9 +121,10 @@ class ComSegGraph():
         dico_list_features = {}
         assert self.gene_column in self.df_spots_label.columns, f"the column {self.gene_column} is not in the dataframe"
         for feature in self.df_spots_label.columns:
-                dico_list_features[feature] = list(self.df_spots_label[feature])
+            dico_list_features[feature] = list(self.df_spots_label[feature])
         list_features = list(dico_list_features.keys())
-        list_features_order = [(i, {feature: dico_list_features[feature][i] for feature in list_features}) for i in range(len(self.df_spots_label))]
+        list_features_order = [(i, {feature: dico_list_features[feature][i] for feature in list_features}) for i in
+                               range(len(self.df_spots_label))]
         dico_features_order = {}
         for node in range(len(list_features_order)):
             dico_features_order[node] = list_features_order[node][1]
@@ -139,8 +132,8 @@ class ComSegGraph():
             dico_features_order[node]["nb_mol"] = 1
         nbrs = NearestNeighbors(n_neighbors=self.k_nearest_neighbors,
                                 algorithm='ball_tree').fit(list_coordo_order)
-        ad = nbrs.kneighbors_graph(list_coordo_order, mode="connectivity") ## can be optimize here
-        distance = nbrs.kneighbors_graph(list_coordo_order, mode ='distance')
+        ad = nbrs.kneighbors_graph(list_coordo_order, mode="connectivity")  ## can be optimize here
+        distance = nbrs.kneighbors_graph(list_coordo_order, mode='distance')
 
         ad[distance > self.edge_max_length] = 0
         distance[distance > self.edge_max_length] = 0
@@ -161,14 +154,13 @@ class ComSegGraph():
             weight = self.dict_co_expression[gene_source][gene_target]
             G[edges[0]][edges[1]]["weight"] = weight
             G[edges[0]][edges[1]]["distance"] = distance_list[edges_index]
-            G[edges[0]][edges[1]]["gaussian"] = normal_dist(distance_list[edges_index], mean=0, sd =1)
+            #G[edges[0]][edges[1]]["gaussian"] = normal_dist(distance_list[edges_index], mean=0, sd=1)
 
         self.G = G
-        self.list_features_order = np.array(list_features_order) ## for later used ?
-        self.list_coordo_order = list_coordo_order ## for later used ?
-        self.list_coordo_order_no_scaling = list_coordo_order_no_scaling ## for later used ?
+        self.list_features_order = np.array(list_features_order)  ## for later used ?
+        self.list_coordo_order = list_coordo_order  # for later used ?
+        self.list_coordo_order_no_scaling = list_coordo_order_no_scaling  ## for later used ?
         return G
-
 
     ## get community detection vector
 
@@ -177,7 +169,6 @@ class ComSegGraph():
                          seed=None,
                          prior_name="in_nucleus",
                          ):
-
 
         """
         Partition the graph into communities/sets of RNAs and computes and stores the "community expression vector"
@@ -193,7 +184,7 @@ class ComSegGraph():
         :return: a graph with a new node attribute "community" with the community detection vector
         :rtype: nx.Graph
         """
-        confidence_level = 1 ##### experimental parameter
+        confidence_level = 1  ##### experimental parameter
 
         nb_egde_total = len(self.G.edges())
         if prior_name is not None:
@@ -220,34 +211,31 @@ class ComSegGraph():
                                                resolution=self.resolution,
                                                seed=seed)
 
-
-
         if clustering_method == "with_prior":
             comm, final_graph = custom_louvain.louvain_communities(
-                    G=G.to_undirected(reciprocal=False),
-                    weight="weight",
-                    resolution=self.resolution,
-                    threshold=0.0000001,
-                    seed=seed,
-                    partition=partition,
-                    prior_key=prior_name,
-                    confidence_level=confidence_level)
-
+                G=G.to_undirected(reciprocal=False),
+                weight="weight",
+                resolution=self.resolution,
+                threshold=0.0000001,
+                seed=seed,
+                partition=partition,
+                prior_key=prior_name,
+                confidence_level=confidence_level)
 
         list_expression_vectors = []
         list_coordinates = []
         list_node_index = []
         list_prior = []
 
-
         for index_commu in range(len(comm)):
             cluster_coordinate = []
-            expression_vector = np.bincount([self.gene_index_dict[self.G.nodes[ind_node][self.gene_column]] for ind_node in comm[index_commu]],
-                                            minlength = len(self.gene_index_dict))
+            expression_vector = np.bincount \
+                ([self.gene_index_dict[self.G.nodes[ind_node][self.gene_column]] for ind_node in comm[index_commu]],
+                 minlength=len(self.gene_index_dict))
             for node in comm[index_commu]:
                 if self.G.nodes[node][self.gene_column] == "centroid":
-                        continue
-                self.G.nodes[node]["index_commu"] =  index_commu
+                    continue
+                self.G.nodes[node]["index_commu"] = index_commu
                 if "z" in self.G.nodes[0]:
                     cluster_coordinate.append([self.G.nodes[node]['x'],
                                                self.G.nodes[node]['y'],
@@ -266,29 +254,27 @@ class ComSegGraph():
 
         count_matrix_anndata = np.array(list_expression_vectors)
 
-
         anndata = ad.AnnData(csr_matrix(count_matrix_anndata))
         anndata.var["features"] = self.selected_genes
         anndata.var_names = self.selected_genes
-        anndata.obs["list_coord"] =  list_coordinates
+        anndata.obs["list_coord"] = list_coordinates
         anndata.obs["node_index"] = list_node_index
         anndata.obs["prior"] = list_prior
         anndata.obs["index_commu"] = range(len(comm))
 
-
-        assert nb_egde_total == len(self.G.edges()) # check it is still the same graph
+        assert nb_egde_total == len(self.G.edges())  # check it is still the same graph
         self.community_anndata = anndata
         self._estimation_density_vec(
-                               key_word="kernel_vector",
-                               remove_self_node=True,
-                               norm_gauss=False,
-                                distance_weight_mode ="linear")
+            key_word="kernel_vector",
+            remove_self_node=True,
+            norm_gauss=False,
+            distance_weight_mode="linear")
 
         return self.community_anndata
 
     def add_cluster_id_to_graph(self,
                                 dict_cluster_id,
-                                clustering_method = "leiden_merged"):
+                                clustering_method="leiden_merged"):
         """
 
         add transcriptional cluster id to each RNA molecule in the graph
@@ -301,7 +287,6 @@ class ComSegGraph():
         :rtype: nx.Graph
         """
 
-
         list_index_commu = list(self.community_anndata.obs['index_commu'])
         dico_commu_cluster = {}
         for index_commu in dict_cluster_id:
@@ -313,14 +298,12 @@ class ComSegGraph():
             G.nodes[node][clustering_method] = str(dico_commu_cluster[G.nodes[node]['index_commu']])
         self.G = G
 
-
-
     def _estimation_density_vec(self,
-                               #max_dist = 5,
-                               key_word = "kernel_vector",
-                               remove_self_node = True,
-                               norm_gauss = False,
-                                distance_weight_mode = "exp"):
+                                #max_dist = 5,
+                                key_word="kernel_vector",
+                                remove_self_node=True,
+                                norm_gauss=False,
+                                distance_weight_mode="exp"):
         import numpy as np
         import scipy.spatial as spatial
         def normal_dist(x, mean, sd, norm_gauss=False):  # copy from knn_to_count
@@ -330,12 +313,13 @@ class ComSegGraph():
             else:
                 prob_density = np.exp(-0.5 * ((x - mean) / sd) ** 2)
             return prob_density
+
         point_tree = spatial.cKDTree(self.list_coordo_order)
         if distance_weight_mode == "exp":
-            list_nn = point_tree.query_ball_point(self.list_coordo_order, self.agg_max_dist )
+            list_nn = point_tree.query_ball_point(self.list_coordo_order, self.agg_max_dist)
         if distance_weight_mode == "linear":
-            list_nn = point_tree.query_ball_point(self.list_coordo_order,self.edge_max_length)
-        for node_index, node_data in self.G.nodes(data=True): ## create a kernel density estimation for each node
+            list_nn = point_tree.query_ball_point(self.list_coordo_order, self.edge_max_length)
+        for node_index, node_data in self.G.nodes(data=True):  ## create a kernel density estimation for each node
             if distance_weight_mode == "None":
                 nn_expression_vector = np.zeros(len(self.selected_genes))
                 nn_expression_vector[self.gene_index_dict[self.G.nodes[node_index][self.gene_column]]] = 1
@@ -352,15 +336,16 @@ class ComSegGraph():
 
             if distance_weight_mode == "exp":
                 distance_weights = normal_dist(array_distance[0],
-                                                    mean=0,
-                                                    sd=self.agg_sd,
-                                                    norm_gauss = norm_gauss)
+                                               mean=0,
+                                               sd=self.agg_sd,
+                                               norm_gauss=norm_gauss)
             if distance_weight_mode == "linear":
                 distance_weights = (self.edge_max_length - array_distance[0]) / self.edge_max_length
             ## add code to remove centroid but there is no centroid in list coordo ?
-            nn_expression_vector = np.bincount([self.gene_index_dict[self.G.nodes[node_nn][self.gene_column]] for node_nn in list_nn_node_index],
-                                               weights=distance_weights,
-                                               minlength=len(self.gene_index_dict))
+            nn_expression_vector = np.bincount \
+                ([self.gene_index_dict[self.G.nodes[node_nn][self.gene_column]] for node_nn in list_nn_node_index],
+                 weights=distance_weights,
+                 minlength=len(self.gene_index_dict))
             self.G.nodes[node_index][key_word] = nn_expression_vector
         ## to factorize with community_nn_message_passing_agg
         list_expression_vectors = []
@@ -374,16 +359,14 @@ class ComSegGraph():
         anndata = ad.AnnData(csr_matrix(count_matrix_anndata))
         anndata.var["features"] = self.selected_genes
         anndata.var_names = self.selected_genes
-        anndata.obs["list_coord"] =  self.community_anndata.obs["list_coord"]
+        anndata.obs["list_coord"] = self.community_anndata.obs["list_coord"]
         anndata.obs["node_index"] = self.community_anndata.obs["node_index"]
         anndata.obs["prior"] = self.community_anndata.obs["prior"]
         anndata.obs["index_commu"] = self.community_anndata.obs["index_commu"]
-        anndata.obs["nb_rna"] = np.asarray((np.sum(self.community_anndata.X, axis = 1).astype(int)))
+        anndata.obs["nb_rna"] = np.asarray((np.sum(self.community_anndata.X, axis=1).astype(int)))
 
         self.community_anndata = anndata
         return anndata
-
-
 
     ### add centroids to the graph
     def add_centroids(self, dict_cell_centroid):
@@ -395,32 +378,29 @@ class ComSegGraph():
         :return:
         """
         for cell, centroid in dict_cell_centroid.items():
-            centroid  = np.array(centroid)
+            centroid = np.array(centroid)
             if centroid.ndim == 2:
                 centroid = np.mean(centroid, axis=0)
             assert centroid.ndim == 1
-            self.G.add_node(len(self.G) -1 + int(cell),
-                           # gene = "centroid",
-                            cell = cell,
-                            in_nucleus = cell,
-                            z = centroid[self.dico_xyz_index["z"]],
-                            y = centroid[self.dico_xyz_index["y"]],
-                            x = centroid[self.dico_xyz_index["x"]])
-            self.G.nodes[len(self.G.nodes)-1][self.gene_column] = "centroid"
+            self.G.add_node(len(self.G) - 1 + int(cell),
+                            # gene = "centroid",
+                            cell=cell,
+                            in_nucleus=cell,
+                            z=centroid[self.dico_xyz_index["z"]],
+                            y=centroid[self.dico_xyz_index["y"]],
+                            x=centroid[self.dico_xyz_index["x"]])
+            self.G.nodes[len(self.G.nodes) - 1][self.gene_column] = "centroid"
             self.dict_cell_centroid = dict_cell_centroid
         return self.G
-
-
-
 
     ### add classify it
     def classify_centroid(self,
                           dict_cell_centroid,
-                          n_neighbors = 15,
-                          dict_in_pixel = True,
-                          max_dist_centroid = None,
-                          key_pred = "leiden_merged",
-                          distance = "ngb_distance_weights",
+                          n_neighbors=15,
+                          dict_in_pixel=True,
+                          max_dist_centroid=None,
+                          key_pred="leiden_merged",
+                          distance="ngb_distance_weights",
                           ):
         """
         classify cells centroid based on their  neighbor RNAs labels from ``add_cluster_id_to_graph()``
@@ -453,13 +433,14 @@ class ComSegGraph():
             list_coordo_order_nuc_centroid = []
             for nuc in self.dict_cell_centroid:
                 if len(self.dict_cell_centroid[nuc]) == 1:
-                    centroid_pix = np.array(self.dict_cell_centroid[nuc][0]) ## to clean, in case of old version of dict
+                    centroid_pix = np.array(
+                        self.dict_cell_centroid[nuc][0])  ## to clean, in case of old version of dict
                 else:
                     assert len(self.dict_cell_centroid[nuc]) == len(self.list_coordo_order[0])
                     centroid_pix = np.array(self.dict_cell_centroid[nuc])
                 centroid_um = centroid_pix * np.array([self.dict_scale['z'],
-                                                                         self.dict_scale['y'],
-                                                                         self.dict_scale["x"]])
+                                                       self.dict_scale['y'],
+                                                       self.dict_scale["x"]])
                 list_coordo_order_nuc_centroid_no_scaling.append(centroid_pix)
                 list_coordo_order_nuc_centroid.append(centroid_um)
         else:
@@ -469,17 +450,15 @@ class ComSegGraph():
                 centroid_um = self.dict_cell_centroid[nuc]
                 list_coordo_order_nuc_centroid.append(centroid_um)
 
-
         ad_nuc_centroid = nbrs.kneighbors_graph(list_coordo_order_nuc_centroid)  ## can be optimize here
         distance_nuc_centroid = nbrs.kneighbors_graph(list_coordo_order_nuc_centroid, mode='distance')
 
-
-        dico_nuclei_centroid =  {}
+        dico_nuclei_centroid = {}
         for nuc_index in range(len(self.dict_cell_centroid)):
 
             nuc = list(self.dict_cell_centroid.keys())[nuc_index]
             centroid = self.dict_cell_centroid[nuc]
-            centroid  = np.array(centroid)
+            centroid = np.array(centroid)
             if centroid.ndim == 2:
                 centroid = np.mean(centroid, axis=0)
 
@@ -522,28 +501,26 @@ class ComSegGraph():
                 type_list) > 0 else "unknown"
             dico_nuclei_centroid[nuc][key_pred] = pred_cluster
 
-        ### add new attribute to node centroid
+            ### add new attribute to node centroid
 
             node_index = len(self.list_coordo_order) - 1 + nuc
             self.G.add_nodes_from([(node_index, dico_nuclei_centroid[nuc])])
             for ii in array_index_nn:
                 self.G.add_edge(node_index, ii)
                 if nuc == self.G.nodes[ii][self.prior_name]:
-                    self.G.add_edge(node_index, ii, distance = 0)
+                    self.G.add_edge(node_index, ii, distance=0)
                 else:
-                    self.G.add_edge(node_index, ii, distance = distance_nuc_centroid[nuc_index, ii])
+                    self.G.add_edge(node_index, ii, distance=distance_nuc_centroid[nuc_index, ii])
 
         return self.G
 
-
     ###### RNA landmark  association ######
 
-
     def associate_rna2landmark(self,
-                         key_pred = "leiden_merged",
-                         prior_name='in_nucleus',
-                         distance='distance',
-                         max_cell_radius=100):
+                               key_pred="leiden_merged",
+                               prior_name='in_nucleus',
+                               distance='distance',
+                               max_cell_radius=100):
 
         """
 
@@ -579,10 +556,10 @@ class ComSegGraph():
         return self.G
 
     def _associate_rna2landmark(self,
-            G,
-            distance='distance',
-            max_cell_radius=100,  ## in theunit of the graph distance ie um
-    ):
+                                G,
+                                distance='distance',
+                                max_cell_radius=100,  ## in theunit of the graph distance ie um
+                                ):
 
         """
 
@@ -626,7 +603,7 @@ class ComSegGraph():
                                                              weight=distance,
                                                              cutoff=max_cell_radius)
 
-                    dico_expression_m[nucleus_node] = [[node,length[node]] for node in length.keys()]
+                    dico_expression_m[nucleus_node] = [[node, length[node]] for node in length.keys()]
                     find += len(list(length.keys()))
                 if len(set(centroid_list).intersection(cc)) > 1:
                     # break
@@ -675,8 +652,6 @@ class ComSegGraph():
 
         return G, dico_expression_m
 
-
-
     ##### generate an anndata from the graph
 
     #### return an anndata with expresion vector
@@ -686,13 +661,13 @@ class ComSegGraph():
     #
 
     def get_anndata_from_result(
-                self,
-               key_cell_pred =  'cell_index_pred',
-                return_polygon = False,
-                alpha = 0.5,
-                min_rna_per_cell = 5,
-                allow_disconnected_polygon = False
-               ):
+            self,
+            key_cell_pred='cell_index_pred',
+            return_polygon=False,
+            alpha=0.5,
+            min_rna_per_cell=5,
+            allow_disconnected_polygon=False
+    ):
         """
         Generate an anndata storing the estimated expression vector and their spots coordinates
 
@@ -713,7 +688,7 @@ class ComSegGraph():
         dict_cell_genes_coordinate = {}
         dict_cell_genes_name = {}
         dict_cell_genes_mol_index = {}
-        dict_cell_dist2centroid= {}
+        dict_cell_dist2centroid = {}
 
         for cell in self.dict_cell_centroid:
             dict_cell_genes[cell] = []
@@ -722,28 +697,28 @@ class ComSegGraph():
             dict_cell_genes_mol_index[cell] = []
             dict_cell_dist2centroid[cell] = []
 
-        for node_index, node_data in self.G.nodes(data = True):
+        for node_index, node_data in self.G.nodes(data=True):
             if node_data[self.gene_column] != 'centroid' and node_data[key_cell_pred] != 0:
-                if node_data[key_cell_pred] in dict_cell_genes: ## check that the centroid is indeed in the crop and not only the prior
+                if node_data[
+                    key_cell_pred] in dict_cell_genes:  ## check that the centroid is indeed in the crop and not only the prior
                     dict_cell_genes[node_data[key_cell_pred]].append(node_data[self.gene_column])
                     dict_cell_genes_coordinate[node_data[key_cell_pred]].append([node_data["z"],
-                                                             node_data['y'],
-                                                             node_data['x']])
+                                                                                 node_data['y'],
+                                                                                 node_data['x']])
                     dict_cell_dist2centroid[node_data[key_cell_pred]].append(node_data["distance2centroid"])
                     dict_cell_genes_mol_index[node_data[key_cell_pred]].append(node_data['index'])
-
 
         list_expression_vectors = []
         list_cell_id = []
         list_cell_genes_coordinate = []
         list_genes_name = []
-        list_gene_index  = []
+        list_gene_index = []
         list_cell_centroid = []
         list_gene_dist2centroid = []
         for cell in dict_cell_genes:
             expression_vector = np.bincount(
                 [self.gene_index_dict[gene] for gene in dict_cell_genes[cell]]
-                        , minlength=len(self.gene_index_dict))
+                , minlength=len(self.gene_index_dict))
             if np.sum(expression_vector) < min_rna_per_cell:
                 continue
             list_expression_vectors.append(expression_vector)
@@ -755,7 +730,7 @@ class ComSegGraph():
             list_gene_index.append(dict_cell_genes_mol_index[cell])
             list_gene_dist2centroid.append(dict_cell_dist2centroid[cell])
             centroid = self.dict_cell_centroid[cell]
-            centroid  = np.array(centroid)
+            centroid = np.array(centroid)
             if centroid.ndim == 2:
                 centroid = np.mean(centroid, axis=0)
             list_cell_centroid += [tuple(centroid)]
@@ -768,9 +743,9 @@ class ComSegGraph():
         random_string = str(np.random.randint(0, 10000))
 
         anndata.obs["CellID"] = list_cell_id
-        anndata.obs["Name"] = [random_string+ "_" + str(i) for i in list_cell_id]
-        anndata.obs.index = [random_string+ "_" + str(i) for i in list_cell_id]
-        anndata.obs_names = [random_string+ "_" + str(i) for i in list_cell_id]
+        anndata.obs["Name"] = [random_string + "_" + str(i) for i in list_cell_id]
+        anndata.obs.index = [random_string + "_" + str(i) for i in list_cell_id]
+        anndata.obs_names = [random_string + "_" + str(i) for i in list_cell_id]
         if len(list_cell_centroid[0]) == 2:
             x_list_centroid = [x[1] for x in list_cell_centroid]
             y_list_centroid = [x[0] for x in list_cell_centroid]
@@ -795,14 +770,14 @@ class ComSegGraph():
         dict_dataframe = {}
         for column in column_name:
             dict_dataframe[column] = []
-        for node_index, node_data in self.G.nodes(data = True):
+        for node_index, node_data in self.G.nodes(data=True):
             if node_data[self.gene_column] != 'centroid':
                 for column in column_name:
                     dict_dataframe[column].append(node_data[column])
         df_spots = pd.DataFrame(dict_dataframe)
 
         ## rename colum index by original index node
-        df_spots.rename(columns = {"index" : "node_index"}, inplace = True)
+        df_spots.rename(columns={"index": "node_index"}, inplace=True)
 
         anndata.uns["df_spots"] = df_spots
         self.final_anndata = anndata
@@ -810,7 +785,6 @@ class ComSegGraph():
         if not return_polygon:
             return anndata, {}
         assert min_rna_per_cell > 0, "min_rna_per_cell should be > 0"
-
 
         list_polygon = []
         dict_polygon = {}
@@ -827,7 +801,7 @@ class ComSegGraph():
 
         ### ensure that there is no overlap between the polygons of list_polygon
         for i in tqdm(list(range(len(list_polygon)))):
-            for j in range(i+1, len(list_polygon)):
+            for j in range(i + 1, len(list_polygon)):
                 if list_polygon[i].intersects(list_polygon[j]):
                     list_polygon[i] = list_polygon[i].difference(list_polygon[j])
         list_keys = list(dict_polygon.keys())
@@ -848,14 +822,15 @@ class ComSegGraph():
                 })
             elif isinstance(geometry, shapely.geometry.MultiPolygon):
                 for poly in list(geometry.geoms):
-                    if allow_disconnected_polygone:
+                    if allow_disconnected_polygon:
                         json_dict["geometries"].append({
                             "type": "Polygon",
                             "coordinates": [list(poly.exterior.coords)],
                             "cell": cell
                         })
                     else:
-                        raise ValueError("disconnected polygons are not allowed, change allow_disconnected_polygon=True")
+                        raise ValueError(
+                            "disconnected polygons are not allowed, change allow_disconnected_polygon=True")
             else:
                 continue
         return anndata, json_dict

@@ -1,14 +1,9 @@
-
-
-
-
 # todo add dataset to zenodo
 # todo add function to compute centroid of cell in a df format + harmonize with the rest of the code
 # update tutorial
 
 
 #%%
-
 
 
 import pandas as pd
@@ -24,10 +19,7 @@ import numpy as np
 __all__ = ["ComSegDict"]
 
 
-
-
 class ComSegDict():
-
     """
     As a dataset is often composed of many separated images. It is required to create many ComSeg graphs of RNAs.
     To ease the analysis of entire dataset, we implement ComSegDict. It is a class that store many ComSeg object
@@ -37,7 +29,7 @@ class ComSegDict():
 
     def __init__(self,
                  dataset=None,
-                 mean_cell_diameter= None,
+                 mean_cell_diameter=None,
                  community_detection="with_prior",
                  seed=None,
                  prior_name="in_nucleus",
@@ -71,6 +63,7 @@ class ComSegDict():
         ##
         ##
         #return
+
     ## create directed grap
     def __setitem__(self, key, item):
         self.dict_img_name[key] = item
@@ -82,10 +75,10 @@ class ComSegDict():
         return repr(f'ComSegDict {self.dict_img_name}')
 
     def __len__(self):
-        return len(self.dict_img_name )
+        return len(self.dict_img_name)
 
     def __delitem__(self, key):
-        del self.dict_img_name [key]
+        del self.dict_img_name[key]
 
     def clear(self):
         return self.dict_img_name.clear()
@@ -112,7 +105,7 @@ class ComSegDict():
         return self.dict_img_name.pop(*args)
 
     def __cmp__(self, dict_):
-        return self.__cmp__(self.dict_img_name , dict_)
+        return self.__cmp__(self.dict_img_name, dict_)
 
     def __contains__(self, item):
         return item in self.dict_img_name
@@ -141,9 +134,10 @@ class ComSegDict():
         """
         if len(self) > 1:
             self.global_anndata = ad.concat([self[img].community_anndata for img in self])
-            self.global_anndata.obs["img_name"] =  np.concatenate([[img] * len(self[img].community_anndata) for img in self])
+            self.global_anndata.obs["img_name"] = np.concatenate \
+                ([[img] * len(self[img].community_anndata) for img in self])
         else:
-            img_name  = list(self.dict_img_name.keys())[0]
+            img_name = list(self.dict_img_name.keys())[0]
             self.global_anndata = self[img_name].community_anndata
             if type(img_name) == type(''):
                 self.global_anndata.obs["img_name"] = [img_name] * len(self.global_anndata)
@@ -151,12 +145,10 @@ class ComSegDict():
                 self.global_anndata.obs["img_name"] = img_name * len(self.global_anndata)
         return self.global_anndata
 
-
     ### compute in-situ vector
 
-
     def compute_community_vector(self,
-                                 k_nearest_neighbors : int = 10):
+                                 k_nearest_neighbors: int = 10):
         """
 
         for all the images in the dataset, this function creates a graph of RNAs
@@ -170,15 +162,15 @@ class ComSegDict():
         for img_name in tqdm(list(self.dataset)):
             #### GRAPH CREATION
             comseg_m = ComSegGraph(
-                    selected_genes=self.dataset.selected_genes,
-                    df_spots_label=self.dataset[img_name],
-                    dict_scale=self.dataset.dict_scale,
-                    mean_cell_diameter=self.mean_cell_diameter,  # in micrometer
-                    dict_co_expression=self.dataset.dict_co_expression,
-                    k_nearest_neighbors=k_nearest_neighbors,
-                    gene_column= self.dataset.gene_column,
-                    prior_name=self.prior_name,
-                                   )
+                selected_genes=self.dataset.selected_genes,
+                df_spots_label=self.dataset[img_name],
+                dict_scale=self.dataset.dict_scale,
+                mean_cell_diameter=self.mean_cell_diameter,  # in micrometer
+                dict_co_expression=self.dataset.dict_co_expression,
+                k_nearest_neighbors=k_nearest_neighbors,
+                gene_column=self.dataset.gene_column,
+                prior_name=self.prior_name,
+            )
             comseg_m.create_graph()
             self[img_name] = comseg_m
 
@@ -187,18 +179,15 @@ class ComSegDict():
                 clustering_method=self.community_detection,
                 seed=self.seed,
                 prior_name=self.prior_name,
-                )
+            )
             self[img_name] = comseg_m
 
-
-
     ### INSITU CLUSTERING WITH THE CLASS
-
 
     def compute_insitu_clustering(self,
                                   size_commu_min=3,
                                   norm_vector=True,
-                                  ### parameter clustering
+                                  # parameter clustering
                                   n_pcs=3,
                                   n_comps=3,
                                   clustering_method="leiden",
@@ -208,9 +197,8 @@ class ComSegDict():
                                   palette=None,
                                   nb_min_cluster=0,
                                   min_merge_correlation=0.8,
-                                  merge_cluster = True,
+                                  merge_cluster=True,
                                   ):
-
 
         """
         Cluster all together  the RNA partition/community expression vector for all the images in the dataset and
@@ -245,14 +233,13 @@ class ComSegDict():
         :return:
         """
 
-
         self.clustering_method = clustering_method
         try:
             self.global_anndata
         except:
             self.concatenate_anndata()
         self.in_situ_clustering = InSituClustering(anndata=self.global_anndata,
-                                        selected_genes=self.global_anndata.var_names)
+                                                   selected_genes=self.global_anndata.var_names)
         ### APPLY NORMALIZATION
         if norm_vector:
             self.in_situ_clustering.compute_normalization_parameters()
@@ -261,26 +248,26 @@ class ComSegDict():
             self.in_situ_clustering.genes_to_take = [True] * len(self.in_situ_clustering.selected_genes)
 
         self.global_anndata = self.in_situ_clustering.cluster_rna_community(
-                                                          size_commu_min=size_commu_min,
-                                                          norm_vector=norm_vector,
-                                                          ### parameter clustering
-                                                          n_pcs=n_pcs,
-                                                          n_comps=n_comps,
-                                                          clustering_method=clustering_method,
-                                                          n_neighbors=n_neighbors,
-                                                          resolution=resolution,
-                                                          n_clusters_kmeans=n_clusters_kmeans,
-                                                          palette=palette
-                                                          )
+            size_commu_min=size_commu_min,
+            norm_vector=norm_vector,
+            ### parameter clustering
+            n_pcs=n_pcs,
+            n_comps=n_comps,
+            clustering_method=clustering_method,
+            n_neighbors=n_neighbors,
+            resolution=resolution,
+            n_clusters_kmeans=n_clusters_kmeans,
+            palette=palette
+        )
         self.in_situ_clustering.get_cluster_centroid(
             cluster_column_name=clustering_method,
             aggregation_mode="mean")
 
         if merge_cluster:
             self.in_situ_clustering.merge_cluster(nb_min_cluster=nb_min_cluster,
-                                            min_merge_correlation=min_merge_correlation,
-                                            cluster_column_name=clustering_method,
-                                            plot=False)
+                                                  min_merge_correlation=min_merge_correlation,
+                                                  cluster_column_name=clustering_method,
+                                                  plot=False)
             self.clustering_method = self.clustering_method + "_merged"
 
         self.global_anndata = self.in_situ_clustering.anndata
@@ -290,16 +277,15 @@ class ComSegDict():
         else:
             classify_mode = "euclidien"
         self.in_situ_clustering.classify_small_community(
-        key_pred = self.clustering_method,
-        classify_mode = classify_mode,
-        min_proba_small_commu = 0,)
-
-
+            key_pred=self.clustering_method,
+            classify_mode=classify_mode,
+            min_proba_small_commu=0, )
 
         ## add cluster to community of each images
         for img in self:
             ## get the cluster list and the community index
-            cluster_id_list = list(self.global_anndata[self.global_anndata.obs.img_name == img].obs[self.clustering_method])
+            cluster_id_list = list \
+                (self.global_anndata[self.global_anndata.obs.img_name == img].obs[self.clustering_method])
             community_index_list = list(self.global_anndata[self.global_anndata.obs.img_name == img].obs.index_commu)
             assert community_index_list == list(self[img].community_anndata.obs['index_commu'])
             self[img].community_anndata.obs[self.clustering_method] = cluster_id_list
@@ -307,15 +293,10 @@ class ComSegDict():
             ## loop on comseg.rst model images
         return self.global_anndata
 
-
-
-
     ### ADD FOUND CLUSTER FROM Global anndata to node graph
 
-
-
     def add_cluster_id_to_graph(self,
-                                clustering_method = "leiden_merged"):
+                                clustering_method="leiden_merged"):
 
         """
 
@@ -338,23 +319,22 @@ class ComSegDict():
                 dico_commu_cluster[list_index_commu[commu_index]] = list_cluster_id[commu_index]
 
             self[img_name].add_cluster_id_to_graph(
-                                    dict_cluster_id = dico_commu_cluster,
-                                    clustering_method=clustering_method)
+                dict_cluster_id=dico_commu_cluster,
+                clustering_method=clustering_method)
 
         return self
-
 
     ### Add and classify centroid
 
     def classify_centroid(self,
-                      path_cell_centroid = None,
-                      n_neighbors=15,
-                      dict_in_pixel=True,
-                      max_dist_centroid=None,
-                      key_pred="leiden_merged",
-                      distance="ngb_distance_weights",
-                      file_extension = "tiff.npy",
-                      centroid_csv_key = {"x": "x", "y": "y", "z": "z", "cell_index" : "cell"}
+                          path_cell_centroid=None,
+                          n_neighbors=15,
+                          dict_in_pixel=True,
+                          max_dist_centroid=None,
+                          key_pred="leiden_merged",
+                          distance="ngb_distance_weights",
+                          file_extension="tiff.npy",
+                          centroid_csv_key={"x": "x", "y": "y", "z": "z", "cell_index": "cell"}
                           ):
 
         """
@@ -388,7 +368,8 @@ class ComSegDict():
             if path_cell_centroid is not None:
                 assert self.dataset.dict_centroid is None, "The dict_centroid attribute of the dataset is not None. Please remove it or set it to None."
                 if str(file_extension)[-4:] == ".npy":
-                    dict_cell_centroid = np.load(Path(path_cell_centroid) / (img_name + file_extension), allow_pickle=True).item()
+                    dict_cell_centroid = np.load(Path(path_cell_centroid) / (img_name + file_extension),
+                                                 allow_pickle=True).item()
                 elif str(file_extension)[-4:] == ".csv":
                     df_centroid = pd.read_csv(Path(path_cell_centroid) / (img_name + file_extension))
                     x_list = list(df_centroid[centroid_csv_key["x"]])
@@ -397,15 +378,18 @@ class ComSegDict():
                         z_list = list(df_centroid["z"])
                     cell_list = list(df_centroid[centroid_csv_key["cell_index"]])
                     if "z" in df_centroid.columns:
-                        dict_cell_centroid = {cell_list[i]:  np.array([ z_list[i], y_list[i], x_list[i]])
-                                                                      for i in range(len(cell_list))}
+                        dict_cell_centroid = {cell_list[i]: np.array([z_list[i], y_list[i], x_list[i]])
+                                              for i in range(len(cell_list))}
                     else:
-                        dict_cell_centroid = {cell_list[i]: {"x": x_list[i], "y": y_list[i]} for i in range(len(cell_list))}
+                        dict_cell_centroid = {cell_list[i]: {"x": x_list[i], "y": y_list[i]} for i in
+                                              range(len(cell_list))}
                 else:
-                    raise ValueError("The file extension of path_cell_centroid is not recognized. Please provide a .npy or .csv file")
+                    raise ValueError \
+                        ("The file extension of path_cell_centroid is not recognized. Please provide a .npy or .csv file")
             else:
                 if self.dataset.dict_centroid is None:
-                    raise ValueError("The dict_centroid attribute of the dataset is None.  Compute the centroid of the cells first. or provide a path to the centroid dataframe or dictionary {cell_index: {z:,y:,x:}} for each image.")
+                    raise ValueError \
+                        ("The dict_centroid attribute of the dataset is None.  Compute the centroid of the cells first. or provide a path to the centroid dataframe or dictionary {cell_index: {z:,y:,x:}} for each image.")
                 dict_cell_centroid = self.dataset.dict_centroid[img_name]
 
             self[img_name].classify_centroid(dict_cell_centroid,
@@ -416,14 +400,12 @@ class ComSegDict():
                                              distance=distance,
                                              )
 
-
     #### Apply diskjtra
 
-
     def associate_rna2landmark(self,
-        key_pred="leiden_merged",
-        distance='distance',
-        max_cell_radius=100):
+                               key_pred="leiden_merged",
+                               distance='distance',
+                               max_cell_radius=100):
 
         """
         Associate RNAs to landmarks based on the both transcriptomic landscape and the
@@ -449,7 +431,7 @@ class ComSegDict():
                 max_cell_radius=max_cell_radius)
 
     def anndata_from_comseg_result(self,
-                                   config : dict = None,
+                                   config: dict = None,
                                    min_rna_per_cell=5,
                                    return_polygon=True,
                                    alpha=0.5,
@@ -498,9 +480,8 @@ class ComSegDict():
             list_image_name += [img_name] * len(anndata)
             dict_df_spots[img_name] = anndata.uns["df_spots"]
 
-            assert np.array_equal(anndata.var_names, self.dataset.selected_genes), "The anndata var names are not the same as the dataset selected genes"
-
-
+            assert np.array_equal(anndata.var_names,
+                                  self.dataset.selected_genes), "The anndata var names are not the same as the dataset selected genes"
 
         self.final_anndata = ad.concat(anndata_list)
         self.final_anndata.obs["image_name"] = list_image_name
@@ -509,25 +490,23 @@ class ComSegDict():
         self.final_anndata.uns["df_spots"] = dict_df_spots
         return self.final_anndata, dict_json_img
 
-
-
     def run_all(self,
-                config : dict = None,
+                config: dict = None,
                 k_nearest_neighbors: int = 10,
-                max_cell_radius : float = 15,
+                max_cell_radius: float = 15,
                 ## in situ clutering parameter
-                size_commu_min : int | int  = 3,
-                norm_vector : bool = False,
-                n_pcs : int = 3,
-                clustering_method : str | str = "leiden",
-                n_neighbors : int | int = 20,
-                resolution  : float | float = 1,
-                n_clusters_kmeans = 4,
-                nb_min_cluster : int | int = 0,
-                min_merge_correlation : float | float = 0.8,
+                size_commu_min: int = 3,
+                norm_vector: bool = False,
+                n_pcs: int = 3,
+                clustering_method: str = "leiden",
+                n_neighbors: int = 20,
+                resolution:  float = 1,
+                n_clusters_kmeans=4,
+                nb_min_cluster: int = 0,
+                min_merge_correlation:  float = 0.8,
                 ### classify centroid
-                path_dataset_folder_centroid: str | str =None,
-                file_extension: str | str = ".csv",
+                path_dataset_folder_centroid: str = None,
+                file_extension: str = ".csv",
                 ):
         """
         function running all the ComSeg steps: (compute_community_vector(),
@@ -579,8 +558,7 @@ class ComSegDict():
             path_dataset_folder_centroid = config.get("path_dataset_folder_centroid", path_dataset_folder_centroid)
             file_extension = config.get("file_extension", file_extension)
 
-
-        self.compute_community_vector(k_nearest_neighbors = k_nearest_neighbors)
+        self.compute_community_vector(k_nearest_neighbors=k_nearest_neighbors)
 
         self.compute_insitu_clustering(
             size_commu_min=size_commu_min,
@@ -612,4 +590,3 @@ class ComSegDict():
             key_pred="leiden_merged",
             distance='distance',
             max_cell_radius=max_cell_radius)
-
