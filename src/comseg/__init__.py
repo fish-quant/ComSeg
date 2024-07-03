@@ -10,6 +10,6 @@ from .utils.preprocessing import sctransform_from_parameters
 __all__ = ["InSituClustering", "ComSegGraph", "custom_louvain", "run_sctransform", "select_genes_for_sct",
            "sctransform_from_parameters"]
 
-__version__ = "0.3"
+__version__ = "0.6"
 
 

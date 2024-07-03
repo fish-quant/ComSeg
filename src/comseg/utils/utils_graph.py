@@ -10,6 +10,7 @@ def _gen_graph(graph,
                super_node_prior_key='in_nucleus',
                distance='distance',
                key_pred="leiden2",
+               gene_column="gene",
                ):
     """
 
@@ -54,7 +55,7 @@ def _gen_graph(graph,
     for i, part in enumerate(partition):
         nodes = set()
         com2node[i] = []
-        if "gene" in graph.nodes[list(part)[0]] and graph.nodes[list(part)[0]]['gene'] == "centroid" and len(part) > 1:
+        if gene_column in graph.nodes[list(part)[0]] and graph.nodes[list(part)[0]][gene_column] == "centroid" and len(part) > 1:
             key_pred_label = graph.nodes[list(part)[1]][key_pred]
             prior_keys_labeled = graph.nodes[list(part)[1]][super_node_prior_key]
         else:
@@ -64,7 +65,7 @@ def _gen_graph(graph,
             node2com[node] = i
             com2node[i].append(node)
             nodes.update(graph.nodes[node].get("nodes", {node}))
-            assert key_pred_label == graph.nodes[node][key_pred] or graph.nodes[node]['gene'] == 'centroid'
+            assert key_pred_label == graph.nodes[node][key_pred] or graph.nodes[node][gene_column] == 'centroid'
             assert prior_keys_labeled == graph.nodes[node][super_node_prior_key]
 
         H.add_node(i, nodes=nodes,
@@ -73,11 +74,11 @@ def _gen_graph(graph,
 
     for node1, node2, wt in graph.edges(data=True):
         if distance not in wt:
-            if "gene" in graph.nodes[node1] or  "gene" in graph.nodes[node2]:
-                if "gene" in graph.nodes[node1]:
-                    assert graph.nodes[node1]['gene'] == 'centroid'
-                if "gene" in graph.nodes[node2]:
-                    assert graph.nodes[node2]['gene'] == 'centroid'
+            if gene_column in graph.nodes[node1] or  gene_column in graph.nodes[node2]:
+                if gene_column in graph.nodes[node1]:
+                    assert graph.nodes[node1][gene_column] == 'centroid'
+                if gene_column in graph.nodes[node2]:
+                    assert graph.nodes[node2][gene_column] == 'centroid'
             continue
         wt = wt[distance]
         com1 = node2com[node1]

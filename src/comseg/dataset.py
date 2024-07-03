@@ -36,7 +36,8 @@ class ComSegDataset():
                  image_csv_files: list = None,
                  centroid_csv_files: list = None,
                  path_cell_centroid=None,
-                 centroid_csv_key={"x": "x", "y": "y", "z": "z", "cell_index": "cell"}
+                 centroid_csv_key={"x": "x", "y": "y", "z": "z", "cell_index": "cell"},
+                 min_nb_rna_patch=None,
                  ):
 
         """
@@ -56,6 +57,7 @@ class ComSegDataset():
         :type image_names_csv_file: list
         :param centroid_name: list of the centroid csv file name , as to be in the same order as the image_names_csv_file
         :type centroid_name: list
+        :min_nb_rna_patch: minimum number of rna in a patch to consider it in the dataset
         """
 
         self.path_dataset_folder = Path(path_dataset_folder)
@@ -75,10 +77,18 @@ class ComSegDataset():
                 image_path_df = Path(path_dataset_folder) / (image_name)
                 ## check if the csv file exists
                 assert image_path_df.exists(), f"{image_name} not found in the dataset folder {path_dataset_folder}"
+                if min_nb_rna_patch is not None:
+                    if len(pd.read_csv(image_path_df)) < min_nb_rna_patch:
+                        print(f"skip {image_path_df.stem} because it has less than {min_nb_rna_patch} rna")
+                        continue
                 self.path_image_dict[image_path_df.stem] = self.path_dataset_folder / (image_name)
                 unique_gene += list(pd.read_csv(self.path_image_dict[image_path_df.stem])[self.gene_column].unique())
         else:
             for image_path_df in self.path_dataset_folder.glob(f'*.csv'):
+                if min_nb_rna_patch is not None:
+                    if len(pd.read_csv(image_path_df)) < min_nb_rna_patch:
+                        print(f"skip {image_path_df.stem} because it has less than {min_nb_rna_patch} rna")
+                        continue
                 print(f"add {image_path_df.stem}")
                 self.path_image_dict[image_path_df.stem] = image_path_df
                 unique_gene += list(pd.read_csv(self.path_image_dict[image_path_df.stem])[self.gene_column].unique())

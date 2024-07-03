@@ -178,7 +178,6 @@ class ComSegDict():
             comseg_m.community_vector(
                 clustering_method=self.community_detection,
                 seed=self.seed,
-                prior_name=self.prior_name,
             )
             self[img_name] = comseg_m
 
@@ -426,7 +425,6 @@ class ComSegDict():
             print(img_name)
             self[img_name].associate_rna2landmark(
                 key_pred=key_pred,
-                prior_name=self.prior_name,
                 distance=distance,
                 max_cell_radius=max_cell_radius)
 

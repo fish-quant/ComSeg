@@ -25,7 +25,9 @@ class InSituClustering():
 
     def __init__(self,
                  anndata,
-                 selected_genes, ):
+                 selected_genes,
+                 ):
+        
         """
         :param anndata: anndata object containing the expression vector of the community.
                 The anndata can be the concatenation of several anndata object from different ComSeg instance
@@ -232,6 +234,10 @@ class InSituClustering():
         from scipy import cluster
         scrna_unique_clusters, scrna_centroids = (list(t) for t in zip(*sorted(
             zip(np.array(self.scrna_unique_clusters).astype(int), self.scrna_centroids))))
+        if len(scrna_centroids) < 2:
+            column_name = cluster_column_name + '_merged'
+            self.anndata_cluster.obs[column_name] = self.anndata_cluster.obs[cluster_column_name]
+            return self.anndata_cluster.obs[column_name]
         Z = cluster.hierarchy.linkage(scrna_centroids, metric="cosine")
         if plot:
             fig = plt.figure(figsize=(15, 10))
@@ -360,7 +366,7 @@ class InSituClustering():
         """
         if classify_mode == 'pca' or classify_mode == 'euclidien':
             kn_neighb = sklearn.neighbors.KNeighborsClassifier(
-                n_neighbors=10,
+                n_neighbors=min([10, len(self.anndata_cluster.obs[key_pred])]),
                 weights='distance',
                 algorithm='auto',
                 leaf_size=30,

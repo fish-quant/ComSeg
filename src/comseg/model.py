@@ -167,7 +167,6 @@ class ComSegGraph():
     def community_vector(self,
                          clustering_method="with_prior",
                          seed=None,
-                         prior_name="in_nucleus",
                          ):
 
         """
@@ -187,11 +186,11 @@ class ComSegGraph():
         confidence_level = 1  ##### experimental parameter
 
         nb_egde_total = len(self.G.edges())
-        if prior_name is not None:
+        if self.prior_name is not None:
             partition = []
             assert clustering_method in ["with_prior"]
             list_nodes = np.array([index for index, data in self.G.nodes(data=True)])
-            array_super_node_prior = np.array([data[prior_name] for index, data in self.G.nodes(data=True)])
+            array_super_node_prior = np.array([data[self.prior_name] for index, data in self.G.nodes(data=True)])
             unique_super_node_prior = np.unique(array_super_node_prior)
             if 0 in unique_super_node_prior:
                 assert unique_super_node_prior[0] == 0
@@ -219,7 +218,7 @@ class ComSegGraph():
                 threshold=0.0000001,
                 seed=seed,
                 partition=partition,
-                prior_key=prior_name,
+                prior_key=self.prior_name,
                 confidence_level=confidence_level)
 
         list_expression_vectors = []
@@ -227,6 +226,7 @@ class ComSegGraph():
         list_node_index = []
         list_prior = []
 
+        # add community assignement to the graph
         for index_commu in range(len(comm)):
             cluster_coordinate = []
             expression_vector = np.bincount \
@@ -518,12 +518,10 @@ class ComSegGraph():
 
     def associate_rna2landmark(self,
                                key_pred="leiden_merged",
-                               prior_name='in_nucleus',
                                distance='distance',
                                max_cell_radius=100):
 
         """
-
         Associate RNA to cell based on the both transcriptomic landscape and the
         distance between the RNAs and the centroid of the cell
 
@@ -539,16 +537,17 @@ class ComSegGraph():
         ## merge supernodes belonging to the nuclei landmark
         from .utils.utils_graph import _gen_graph
         G_merge = _gen_graph(graph=self.G.copy(),
-                             super_node_prior_key=prior_name,
+                             super_node_prior_key=self.prior_name,
                              distance=distance,
                              key_pred=key_pred,
+                             gene_column=self.gene_column,
                              )
         G_merge, dico_expression_m_merge = self._associate_rna2landmark(
             G=G_merge,
             distance=distance,
             max_cell_radius=max_cell_radius,
         )
-        for super_node_index in G_merge.nodes():
+        for super_node_index in tqdm(list(G_merge.nodes())):
             set_super_nodes = G_merge.nodes[super_node_index]['nodes']
             for simple_nodes in set_super_nodes:
                 self.G.nodes[simple_nodes]["cell_index_pred"] = G_merge.nodes[super_node_index]["cell_index_pred"]
@@ -788,16 +787,16 @@ class ComSegGraph():
 
         list_polygon = []
         dict_polygon = {}
-        for cell_index in range(len(list_cell_id)):
+        for cell_index in range(len(anndata.obs["CellID"])):
             csv_list_y = []
             csv_list_x = []
-            if len(list_genes_name[cell_index]) >= min_rna_per_cell:
-                csv_list_y += list(np.array(list_cell_genes_coordinate[cell_index])[:, 1])
-                csv_list_x += list(np.array(list_cell_genes_coordinate[cell_index])[:, 2])
-                list_point = list(zip(csv_list_x, csv_list_y))
-                alpha_shape = alphashape.alphashape(list_point, alpha)
-                list_polygon.append(alpha_shape)
-                dict_polygon[list_cell_id[cell_index]] = alpha_shape
+            #if len(list_genes_name[cell_index]) >= min_rna_per_cell: already checked before
+            csv_list_y += list(np.array(list_cell_genes_coordinate[cell_index])[:, 1])
+            csv_list_x += list(np.array(list_cell_genes_coordinate[cell_index])[:, 2])
+            list_point = list(zip(csv_list_x, csv_list_y))
+            alpha_shape = alphashape.alphashape(list_point, alpha)
+            list_polygon.append(alpha_shape)
+            dict_polygon[anndata.obs["CellID"][cell_index]] = alpha_shape
 
         ### ensure that there is no overlap between the polygons of list_polygon
         for i in tqdm(list(range(len(list_polygon)))):
@@ -818,7 +817,7 @@ class ComSegGraph():
                 json_dict["geometries"].append({
                     "type": "Polygon",
                     "coordinates": [list(geometry.exterior.coords)],
-                    "cell": cell
+                    "cell": int(cell)
                 })
             elif isinstance(geometry, shapely.geometry.MultiPolygon):
                 for poly in list(geometry.geoms):
@@ -826,11 +825,16 @@ class ComSegGraph():
                         json_dict["geometries"].append({
                             "type": "Polygon",
                             "coordinates": [list(poly.exterior.coords)],
-                            "cell": cell
+                            "cell":  int(cell)
                         })
                     else:
                         raise ValueError(
                             "disconnected polygons are not allowed, change allow_disconnected_polygon=True")
             else:
-                continue
+                json_dict["geometries"].append({
+                    "type": "Polygon",
+                    "coordinates": [[]],
+                    "cell":  int(cell)
+                })
+                #continue
         return anndata, json_dict
