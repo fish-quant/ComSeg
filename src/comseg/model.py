@@ -738,8 +738,9 @@ class ComSegGraph():
         anndata.var["features"] = self.selected_genes
         anndata.var_names = self.selected_genes
         anndata.var["Name"] = self.selected_genes
-        #
-        random_string = str(np.random.randint(0, 10000))
+        # resert seed numpy
+        np.random.seed()
+        random_string = str(np.random.randint(0, 1000000000))
 
         anndata.obs["CellID"] = list_cell_id
         anndata.obs["Name"] = [random_string + "_" + str(i) for i in list_cell_id]
@@ -809,6 +810,15 @@ class ComSegGraph():
         self.list_polygon = list_polygon
         self.dict_polygon = dict_polygon
 
+        # check that all geometries are valid
+        list_valid_cell = []
+        for cell in dict_polygon:
+            geometry = dict_polygon[cell]
+            if isinstance(geometry, shapely.geometry.Polygon) or isinstance(geometry, shapely.geometry.MultiPolygon):
+                list_valid_cell.append(cell)
+        ## delete row of the annadata that are not valid
+        anndata = anndata[anndata.obs["CellID"].isin(list_valid_cell)]
+
         ## Create the json
         json_dict = {"geometries": []}
         for cell in dict_polygon:
@@ -831,10 +841,16 @@ class ComSegGraph():
                         raise ValueError(
                             "disconnected polygons are not allowed, change allow_disconnected_polygon=True")
             else:
+
+                """centroid = self.dict_cell_centroid[cell]
+                centroid = np.array(centroid)
+                if centroid.ndim == 2:
+                    centroid = np.mean(centroid, axis=0)
+                list_cell_centroid += [tuple(centroid)]
                 json_dict["geometries"].append({
-                    "type": "Polygon",
-                    "coordinates": [[]],
+                    "type": "Point",
+                    "coordinates": [[(centroid[self.dico_xyz_index["x"]], centroid[self.dico_xyz_index["y"]])]],
                     "cell":  int(cell)
-                })
-                #continue
+                })"""
+                continue
         return anndata, json_dict
