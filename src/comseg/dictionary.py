@@ -15,6 +15,7 @@ from .clustering import InSituClustering
 from .model import ComSegGraph
 from pathlib import Path
 import numpy as np
+from .utils.preprocessing import  is_r_package_installed
 
 __all__ = ["ComSegDict"]
 
@@ -185,7 +186,7 @@ class ComSegDict():
 
     def compute_insitu_clustering(self,
                                   size_commu_min=3,
-                                  norm_vector=True,
+                                  norm_vector=False,
                                   # parameter clustering
                                   n_pcs=3,
                                   n_comps=3,
@@ -231,6 +232,10 @@ class ComSegDict():
         :type min_merge_correlation: float
         :return:
         """
+        if norm_vector:
+            assert is_r_package_installed("sctransform"), "The R package sctransform is not installed. Please install it to use the normalization or set norm_vector=False"
+            assert is_r_package_installed("feather"), "The R package feather is not installed. Please install it to use the normalization or set norm_vector=False"
+            assert is_r_package_installed("arrow"), "The R package arrow is not installed. Please install it to use the normalization or set norm_vector=False"
 
         self.clustering_method = clustering_method
         try:
@@ -555,6 +560,11 @@ class ComSegDict():
             min_merge_correlation = config.get("min_merge_correlation", min_merge_correlation)
             path_dataset_folder_centroid = config.get("path_dataset_folder_centroid", path_dataset_folder_centroid)
             file_extension = config.get("file_extension", file_extension)
+
+        if norm_vector:
+            assert is_r_package_installed("sctransform"), "The R package sctransform is not installed. Please install it to use the normalization or set norm_vector=False"
+            assert is_r_package_installed("feather"), "The R package feather is not installed. Please install it to use the normalization or set norm_vector=False"
+            assert is_r_package_installed("arrow"), "The R package arrow is not installed. Please install it to use the normalization or set norm_vector=False"
 
         self.compute_community_vector(k_nearest_neighbors=k_nearest_neighbors)
 

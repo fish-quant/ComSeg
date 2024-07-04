@@ -26,6 +26,24 @@ from skimage import measure
 #from utils.seg_preprocessing import generate_dico_centroid
 
 
+import subprocess
+
+def is_r_package_installed(package_name):
+    """
+    Check if an R package is installed.
+
+    Parameters:
+    package_name (str): The name of the R package to check.
+
+    Returns:
+    bool: True if the package is installed, False otherwise.
+    """
+    command = f'if (!require("{package_name}")) {{ quit(status = 1) }} else {{ quit(status = 0) }}'
+    result = subprocess.run(['Rscript', '-e', command], capture_output=True)
+
+    return result.returncode == 0
+
+
 def sctransform_from_parameters(fit_params, array_of_vect):
 
     """
