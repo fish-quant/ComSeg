@@ -33,7 +33,6 @@ class ComSegDict():
                  mean_cell_diameter=None,
                  community_detection="with_prior",
                  seed=None,
-                 prior_name="in_nucleus",
                  ):
 
         """
@@ -57,7 +56,6 @@ class ComSegDict():
         self.mean_cell_diameter = mean_cell_diameter
         self.community_detection = community_detection
         self.seed = seed
-        self.prior_name = prior_name
         self.dict_img_name = {}
 
         ###
@@ -170,7 +168,7 @@ class ComSegDict():
                 dict_co_expression=self.dataset.dict_co_expression,
                 k_nearest_neighbors=k_nearest_neighbors,
                 gene_column=self.dataset.gene_column,
-                prior_name=self.prior_name,
+                prior_name=self.dataset.prior_name,
             )
             comseg_m.create_graph()
             self[img_name] = comseg_m
@@ -338,7 +336,7 @@ class ComSegDict():
                           key_pred="leiden_merged",
                           distance="ngb_distance_weights",
                           file_extension="tiff.npy",
-                          centroid_csv_key={"x": "x", "y": "y", "z": "z", "cell_index": "cell"}
+                          centroid_csv_key={"x": "x", "y": "y", "z": "z"}, #  "cell_index": self .prior_name}
                           ):
 
         """
@@ -347,8 +345,10 @@ class ComSegDict():
 
 
         :param path_dict_cell_centroid: If computed already by the ``ComSegDataset`` class from prior Maks leave it None.
-        Otherwise : path_dict_cell_centroid is a  Path to the folder containing the centroid dictionary {cell : {z:,y:,x:}} for each image.
+        Otherwise : path_dict_cell_centroid is a  Path to the folder containing the centroid dictionary {self.prior_name : {z:,y:,x:}} for each image.
                          Each centroid dictionary has to be stored in a file in a npy format,  named as the image name.
+                         centroid can also be stored in a csv file with the following columns: "x", "y", "z", "self.prior_name" where prior name are the cell index
+
         :type path_dict_cell_centroid: str
         :param n_neighbors: number of neighbors to consider for the classification of the centroid (default 15)
         :type n_neighbors: int
@@ -380,7 +380,7 @@ class ComSegDict():
                     y_list = list(df_centroid["y"])
                     if "z" in df_centroid.columns:
                         z_list = list(df_centroid["z"])
-                    cell_list = list(df_centroid[centroid_csv_key["cell_index"]])
+                    cell_list = list(df_centroid[self.dataset.prior_name])
                     if "z" in df_centroid.columns:
                         dict_cell_centroid = {cell_list[i]: np.array([z_list[i], y_list[i], x_list[i]])
                                               for i in range(len(cell_list))}

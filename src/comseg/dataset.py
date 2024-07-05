@@ -28,6 +28,7 @@ class ComSegDataset():
 
     def __init__(self,
                  path_dataset_folder,
+                 prior_name,
                  path_to_mask_prior=None,
                  mask_file_extension=".tiff",
                  dict_scale={"x": 0.103, 'y': 0.103, "z": 0.3},
@@ -36,7 +37,7 @@ class ComSegDataset():
                  image_csv_files: list = None,
                  centroid_csv_files: list = None,
                  path_cell_centroid=None,
-                 centroid_csv_key={"x": "x", "y": "y", "z": "z", "cell_index": "cell"},
+                 centroid_csv_key={"x": "x", "y": "y", "z": "z"},
                  min_nb_rna_patch=None,
                  ):
 
@@ -70,6 +71,7 @@ class ComSegDataset():
         self.mean_cell_diameter = mean_cell_diameter
         self.gene_column = gene_column
         self.path_image_dict = {}
+        self.prior_name = prior_name
         unique_gene = []
         self.image_csv_files = image_csv_files
         if image_csv_files is not None:
@@ -109,7 +111,7 @@ class ComSegDataset():
                 y_list = list(df_centroid["y"])
                 if centroid_csv_key["z"] in df_centroid.columns:
                     z_list = list(df_centroid["z"])
-                cell_list = list(df_centroid[centroid_csv_key["cell_index"]])
+                cell_list = list(df_centroid[self.prior_name])
                 if centroid_csv_key["z"] in df_centroid.columns:
                     self.dict_centroid[self.list_index[i]] = {cell_list[i]: np.array([z_list[i], y_list[i], x_list[i]])
                                                               for i in range(len(cell_list))}
@@ -186,7 +188,7 @@ class ComSegDataset():
 
         if config is not None:
             print("config dict overwritting default parameters")
-            prior_name = config.get("prior_name", prior_name)
+            #prior_name = config.get("prior_name", prior_name)
             overwrite = config.get("overwrite", overwrite)
             compute_centroid = config.get("compute_centroid", compute_centroid)
             regex_df = config.get("regex_df", regex_df)
@@ -215,9 +217,9 @@ class ComSegDataset():
                 pixel_coordinates = (df_spots[["y", "x"]]).astype(int).values
                 prior_list = [mask[y, x] for (y, x) in pixel_coordinates]
 
-            if prior_name in df_spots.columns and overwrite == False:
-                raise Exception(f"prior_name {prior_name} already in df_spots and overwrite is False")
-            df_spots[prior_name] = prior_list
+            if self.prior_name in df_spots.columns and overwrite == False:
+                raise Exception(f"prior_name {self.prior_name} already in df_spots and overwrite is False")
+            df_spots[self.prior_name] = prior_list
             df_spots.to_csv(image_path_df, index=False)
             print(f"prior added to {image_path_df.stem} and saved in csv file")
 
