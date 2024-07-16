@@ -22,5 +22,6 @@ object with the  genes expression and coordinates of each cell.
 
 ### Citation 
 
-A point cloud segmentation framework for image-based spatial transcriptomic, Defard et al bioRxiv 2023.12.01.569528; doi: https://doi.org/10.1101/2023.12.01.569528
+Defard, T., Laporte, H., Ayan, M. et al. A point cloud segmentation framework for image-based spatial transcriptomics. Commun Biol 7, 823 (2024). https://doi.org/10.1038/s42003-024-06480-3
+
 
