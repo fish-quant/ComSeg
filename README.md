@@ -2,7 +2,7 @@
 <img src="./comseg.png" width="650" height="263">
 
 # News (16/07/24)
-- Update with comseg 1.4 Compatibility with SOPA : (https://gustaveroussy.github.io/sopa/tutorials/comseg/) +  fix bug centroid  
+- Update with comseg 1.4: Compatibility with SOPA : (https://gustaveroussy.github.io/sopa/tutorials/comseg/) +  fix bug centroid  
 
 # Support
 
