@@ -475,7 +475,7 @@ class ComSegGraph():
             dico_nuclei_centroid[nuc]["gaussian"] = []
             dico_nuclei_centroid[nuc][self.gene_column] = "centroid"
             dico_nuclei_centroid[nuc]["cell"] = nuc
-            dico_nuclei_centroid[nuc]["in_nucleus"] = nuc
+            dico_nuclei_centroid[nuc][self.prior_name] = nuc
             dico_nuclei_centroid[nuc]["index_commu_in_nucleus"] = nuc
             type_list = []
             array_index_nn = np.nonzero(ad_nuc_centroid[nuc_index].toarray())[1]
