@@ -474,7 +474,6 @@ class ComSegGraph():
             dico_nuclei_centroid[nuc]["ngb_distance_weights"] = []
             dico_nuclei_centroid[nuc]["gaussian"] = []
             dico_nuclei_centroid[nuc][self.gene_column] = "centroid"
-            dico_nuclei_centroid[nuc]["cell"] = nuc
             dico_nuclei_centroid[nuc][self.prior_name] = nuc
             dico_nuclei_centroid[nuc]["index_commu_in_nucleus"] = nuc
             type_list = []
