@@ -12,9 +12,9 @@ It takes as input csv files with the spot coordinates and either the cell centro
 it outputs an anndata object with the genes expression and coordinates of each cell.
 It can leverage the information of the cell nuclei to improve the accuracy of the segmentation / RNA profiling.
 
-News
+News (16/07/24)
 =======
-- Update with comseg 0.0.8. Compatibility with SOPA : https://gustaveroussy.github.io/sopa/
+- Update with comseg 1.4: Compatibility with SOPA : (https://gustaveroussy.github.io/sopa/tutorials/comseg/) + fix bug centroid
 - Update with comseg 0.0.7. Computation of the co-expression matrix is now faster.
 
 .. image:: comseg.png
