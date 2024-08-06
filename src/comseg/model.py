@@ -831,7 +831,7 @@ class ComSegGraph():
                 })
             elif isinstance(geometry, shapely.geometry.MultiPolygon):
                 for poly in list(geometry.geoms):
-                    if allow_disconnected_polygon:
+                    if not allow_disconnected_polygon:
                         json_dict["geometries"].append({
                             "type": "Polygon",
                             "coordinates": [list(poly.exterior.coords)],
@@ -839,7 +839,7 @@ class ComSegGraph():
                         })
                     else:
                         raise ValueError(
-                            "disconnected polygons are not allowed, change allow_disconnected_polygon=True")
+                            "disconnected polygons are not allowed, change allow_disconnected_polygon=False")
             else:
 
                 """centroid = self.dict_cell_centroid[cell]
