@@ -176,8 +176,6 @@ class ComSegDataset():
         This function add prior knowledge to the dataset. It adds a column in the csv files indicating prior label of each spot.
         It takes the positition of each spot and add the corresponding value of the segmentation mask prior (.tiff) at this position.
 
-        :param prior_name: name of the column to add in the csv files containing the prior label of each spot
-        :type str
         :param overwrite: if True, overwrite the prior_name column if it already exists
         :type bool
         :param compute_centroid : if True, compute the centroid of each cell/nucleus in segmentation mask to use it for RNA-cell association
