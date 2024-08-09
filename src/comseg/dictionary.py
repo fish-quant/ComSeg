@@ -158,6 +158,9 @@ class ComSegDict():
         """
         for img_name in tqdm(list(self.dataset)):
             #### GRAPH CREATION
+            df_spots_label = self.dataset[img_name]
+            if not self.dataset._do_3D or "z" not in df_spots_label.columns:
+                df_spots_label['z'] = 0
             comseg_m = ComSegGraph(
                 selected_genes=self.dataset.selected_genes,
                 df_spots_label=self.dataset[img_name],

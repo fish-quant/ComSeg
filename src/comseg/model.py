@@ -107,15 +107,14 @@ class ComSegGraph():
         except Exception as e:
             print(e)
 
-        if "z" in self.df_spots_label.columns:  ## you should do ZYX every where it is error prone, function to chenge : this one rna nuclei assoctioan
-            list_coordo_order_no_scaling = np.array \
-                ([self.df_spots_label.z, self.df_spots_label.y, self.df_spots_label.x]).T
-            list_coordo_order = list_coordo_order_no_scaling * np.array([self.dict_scale['z'],
-                                                                         self.dict_scale['y'],
-                                                                         self.dict_scale["x"]])
-        else:
-            list_coordo_order_no_scaling = np.array([self.df_spots_label.x, self.df_spots_label.y]).T
-            list_coordo_order = list_coordo_order_no_scaling * np.array([self.dict_scale['y'], self.dict_scale['x']])
+
+        assert "z" in self.df_spots_label.columns
+
+        list_coordo_order_no_scaling = np.array \
+            ([self.df_spots_label.z, self.df_spots_label.y, self.df_spots_label.x]).T
+        list_coordo_order = list_coordo_order_no_scaling * np.array([self.dict_scale['z'],
+                                                                     self.dict_scale['y'],
+                                                                     self.dict_scale["x"]])
         dico_list_features = {}
         assert self.gene_column in self.df_spots_label.columns, f"the column {self.gene_column} is not in the dataframe"
         for feature in self.df_spots_label.columns:
@@ -426,15 +425,12 @@ class ComSegGraph():
             list_coordo_order_nuc_centroid_no_scaling = []
             list_coordo_order_nuc_centroid = []
             for nuc in self.dict_cell_centroid:
-                if len(self.dict_cell_centroid[nuc]) == 1:
-                    centroid_pix = np.array(
-                        self.dict_cell_centroid[nuc][0])  ## to clean, in case of old version of dict
-                else:
-                    assert len(self.dict_cell_centroid[nuc]) == len(self.list_coordo_order[0])
-                    centroid_pix = np.array(self.dict_cell_centroid[nuc])
+                assert len(self.dict_cell_centroid[nuc]) == len(self.list_coordo_order[0])
+                centroid_pix = np.array(self.dict_cell_centroid[nuc])
                 centroid_um = centroid_pix * np.array([self.dict_scale['z'],
                                                        self.dict_scale['y'],
                                                        self.dict_scale["x"]])
+
                 list_coordo_order_nuc_centroid_no_scaling.append(centroid_pix)
                 list_coordo_order_nuc_centroid.append(centroid_um)
         else:

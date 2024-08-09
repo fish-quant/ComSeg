@@ -37,8 +37,8 @@ class ComSegDataset():
                  image_csv_files: list = None,
                  centroid_csv_files: list = None,
                  path_cell_centroid=None,
-                 centroid_csv_key={"x": "x", "y": "y", "z": "z"},
                  min_nb_rna_patch=None,
+
                  ):
 
         """
@@ -61,7 +61,6 @@ class ComSegDataset():
         :type centroid_name: list
         :min_nb_rna_patch: minimum number of rna in a patch to consider it in the dataset
         """
-
         self.path_dataset_folder = Path(path_dataset_folder)
         if path_to_mask_prior is not None:
             self.path_to_mask_prior = Path(path_to_mask_prior)
@@ -73,6 +72,7 @@ class ComSegDataset():
         self.gene_column = gene_column
         self.path_image_dict = {}
         self.prior_name = prior_name
+        self._do_3D = True
         unique_gene = []
         self.image_csv_files = image_csv_files
         if image_csv_files is not None:
@@ -101,24 +101,27 @@ class ComSegDataset():
         self.selected_genes = np.unique(unique_gene)
         self.centroid_csv_files = centroid_csv_files
         if self.centroid_csv_files is not None:
+            all_z = []
             assert len(self.centroid_csv_files) == len(
-                self.list_index), "centroid_file_name should have the same length as image_names_csv_file"
+                    self.list_index), "centroid_file_name should have the same length as image_names_csv_file"
             self.dict_centroid = {}
             for i in range(len(self.centroid_csv_files)):
                 self.dict_centroid[self.list_index[i]] = self.centroid_csv_files[i]
 
                 df_centroid = pd.read_csv(Path(path_cell_centroid) / (self.centroid_csv_files[i]))
-                x_list = list(df_centroid[centroid_csv_key["x"]])
+                x_list = list(df_centroid["x"])
                 y_list = list(df_centroid["y"])
-                if centroid_csv_key["z"] in df_centroid.columns:
-                    z_list = list(df_centroid["z"])
+                if not "z" in df_centroid.columns:
+                    df_centroid["z"] = 0
+                    self._do_3D = False
+                z_list = list(df_centroid["z"])
+                all_z += z_list
                 cell_list = list(df_centroid[self.prior_name])
-                if centroid_csv_key["z"] in df_centroid.columns:
-                    self.dict_centroid[self.list_index[i]] = {cell_list[i]: np.array([z_list[i], y_list[i], x_list[i]])
+                self.dict_centroid[self.list_index[i]] = {cell_list[i]: np.array([z_list[i], y_list[i], x_list[i]])
                                                               for i in range(len(cell_list))}
-                else:
-                    self.dict_centroid[self.list_index[i]] = {cell_list[i]: {"x": x_list[i], "y": y_list[i]} for i in
-                                                              range(len(cell_list))}
+            if len(np.unique(all_z))== 1:
+                self._do_3D = False
+
 
     def __getitem__(self, key):
         if isinstance(key, int):
