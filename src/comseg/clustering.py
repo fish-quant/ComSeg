@@ -314,7 +314,7 @@ class InSituClustering():
 
         if pca_model is not None:
             list_boll_nan = np.sum(np.isnan(norm_expression_vectors), axis=1) == 0
-            projected_vect = pca_model.fit_transform(norm_expression_vectors[list_boll_nan])
+            projected_vect = pca_model.transform(norm_expression_vectors[list_boll_nan])
         else:
             list_boll_nan = np.sum(np.isnan(norm_expression_vectors), axis=1) == 0
             projected_vect = norm_expression_vectors[list_boll_nan]
@@ -384,6 +384,7 @@ class InSituClustering():
                 pca_model = sklearn.decomposition.PCA(n_components=components_.shape[0])
                 pca_model.components_ = components_
                 pca_model.mean_ = self.anndata_cluster.X.mean(axis=0)
+                pca_model.explained_variance_ = None
             else:
                 pca_model = None
                 kn_neighb.fit(self.anndata_cluster.X,

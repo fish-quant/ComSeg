@@ -9,7 +9,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ComSeg"
-version = "1.5dev"
+version = "1.7"
 authors = [
   { name="Thomas Defard", email="thomas.defard@mines-paristech.fr" },
 ]
