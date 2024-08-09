@@ -12,7 +12,7 @@ environments.html>`_ environment.  In a terminal run the command:
 .. code-block:: bash
 
    $ conda create -n ComSeg_env python=3.8
-   $ source activate ComSeg_env
+   $ conda activate ComSeg_env
    $ conda install R=4.3
 
 then in ``R`` do
