@@ -1,17 +1,12 @@
 
 <img src="./comseg.png" width="650" height="263">
 
-# News
-- Update with comseg 0.4 polygon generation from point clouds 
-
-- Update with comseg 0.0.8. Compatibility with SOPA : https://gustaveroussy.github.io/sopa/
-
-- Update with comseg 0.0.7. Computation of the co-expression matrix is now faster.
+# News (16/07/24)
+- Update with comseg 1.4: Compatibility with SOPA : (https://gustaveroussy.github.io/sopa/tutorials/comseg/) +  fix bug centroid  
 
 # Support
 
 If you have any questions relative to the package or bug, please open an issue in this repository.
-
 
 # ComSeg framework
 
@@ -27,5 +22,6 @@ object with the  genes expression and coordinates of each cell.
 
 ### Citation 
 
-A point cloud segmentation framework for image-based spatial transcriptomic, Defard et al bioRxiv 2023.12.01.569528; doi: https://doi.org/10.1101/2023.12.01.569528
+Defard, T., Laporte, H., Ayan, M. et al. A point cloud segmentation framework for image-based spatial transcriptomics. Commun Biol 7, 823 (2024). https://doi.org/10.1038/s42003-024-06480-3
+
 

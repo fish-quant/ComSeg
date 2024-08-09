@@ -314,7 +314,7 @@ class InSituClustering():
 
         if pca_model is not None:
             list_boll_nan = np.sum(np.isnan(norm_expression_vectors), axis=1) == 0
-            projected_vect = pca_model.transform(norm_expression_vectors[list_boll_nan])
+            projected_vect = pca_model.fit_transform(norm_expression_vectors[list_boll_nan])
         else:
             list_boll_nan = np.sum(np.isnan(norm_expression_vectors), axis=1) == 0
             projected_vect = norm_expression_vectors[list_boll_nan]
