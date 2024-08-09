@@ -40,18 +40,16 @@ class ComSegDict():
         :type dataset: ComSegDataset
         :param mean_cell_diameter: the expected mean cell diameter in µm default is 15µm
         :type mean_cell_diameter: float
-        :param community_detection: choose in ["with_prior",  "louvain"], "with_prior" is our graph partioning / community
+        :param community_detection: choose in ["with_prior",  "louvain"], "with_prior" is our graph partitioning / community
                 detection method taking into account prior knowledge
         :type community_detection: str
-        :param seed: (optional) seed for the graph partioning initialization
+        :param seed: (optional) seed for the graph partitioning initialization
         :type seed: int
         :param prior_name: (optional) Name of the prior cell assignment column the input CSV file. Node with the same prior label will be merged into a super node.
         node with different prior label can not be merged during the modularity optimization.
         :type prior_name: str
         """
 
-        #:param confidence_level: (experimental) confidence level for the prior knowledge (prior_name) in the range [0,1]. 1 means that the prior knowledge is certain.
-        #:type confidence_level: float
         self.dataset = dataset
         self.mean_cell_diameter = mean_cell_diameter
         self.community_detection = community_detection

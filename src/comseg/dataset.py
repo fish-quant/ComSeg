@@ -49,6 +49,7 @@ class ComSegDataset():
         :param mask_file_extension: file extension of the mask priors
         :default mask_file_extension: ".tiff"
         :param dict_scale: dictionary containing the pixel/voxel size of the images in µm default is {"x": 0.103, 'y': 0.103, "z": 0.3}
+        it is then used to convert the coordinates of the spots in the csv files from pixels to µm. if your CSV files are already in µm set dict_scale to {"x": 1, 'y': 1, "z": 1}
         :type dict_scale: dict
         :param mean_cell_diameter: the expected mean cell diameter in µm default is 15µm
         :type mean_cell_diameter: float
@@ -118,7 +119,6 @@ class ComSegDataset():
                 else:
                     self.dict_centroid[self.list_index[i]] = {cell_list[i]: {"x": x_list[i], "y": y_list[i]} for i in
                                                               range(len(cell_list))}
-                self.dict_centroid[self.list_index[i]]
 
     def __getitem__(self, key):
         if isinstance(key, int):
@@ -166,7 +166,6 @@ class ComSegDataset():
 
     def add_prior_from_mask(self,
                             config=None,
-                            prior_name='in_nucleus',
                             overwrite=False,
                             compute_centroid=True,
                             regex_df="*.csv"
@@ -181,7 +180,7 @@ class ComSegDataset():
         :type str
         :param overwrite: if True, overwrite the prior_name column if it already exists
         :type bool
-        :param compute_centroid : if True, compute the centroid of each cell/nucleus in segmentation mask for to use it for RNA-cell association
+        :param compute_centroid : if True, compute the centroid of each cell/nucleus in segmentation mask to use it for RNA-cell association
         :type bool
         :return: None
         """
@@ -226,7 +225,6 @@ class ComSegDataset():
             if compute_centroid:
                 dict_centroid = compute_dict_centroid(mask_nuclei=mask,
                                                       background=0)
-
                 self.dict_centroid[image_path_df.stem] = dict_centroid
                 print(f"dict_centroid added for {image_path_df.stem} ")
 
@@ -279,9 +277,6 @@ class ComSegDataset():
         assert self.gene_column in df_spots_label.columns
         for feature in df_spots_label.columns:
             dico_list_features[feature] = list(df_spots_label[feature])
-        list_features = list(dico_list_features.keys())
-        list_features_order = [(i, {feature: dico_list_features[feature][i] for feature in list_features}) for i in
-                               range(len(df_spots_label))]
         array_gene_indexed = np.array([dico_list_features[self.gene_column][i] for i in range(len(df_spots_label))])
 
         nbrs = NearestNeighbors(n_neighbors=n_neighbors, algorithm='ball_tree').fit(list_coordo_order)
@@ -311,28 +306,6 @@ class ComSegDataset():
                 expression_vector[gene_index_dico[str_gene]] += (radius - 1 * vector_distance[str_gene_index]) / radius
             list_expression_vec.append(expression_vector)
         count_matrix = np.array(list_expression_vec)
-
-        """edges = list(zip(rows.tolist(), cols.tolist()))
-
-        G = nx.DiGraph()  # oriented graph
-        G.add_nodes_from(list_features_order)
-        weighted_edges = [(e[0], e[1], distance[e[0], e[1]]) for e in edges]
-        G.add_weighted_edges_from(weighted_edges)
-
-        list_expression_vec = []
-        for node in list(G.nodes()):
-            successors = set(list(G.successors(node)))
-            if remove_self_node:
-                successors.remove(node)
-            vectors_gene = list(array_gene_indexed[list(successors)])
-            vector_distance = np.array([G[node][suc]['weight'] for suc in G.successors(node)])
-            # vector_distance
-            expression_vector = np.zeros(len(self.selected_genes))
-            for str_gene_index in range(len(vectors_gene)):
-                str_gene = vectors_gene[str_gene_index]
-                expression_vector[gene_index_dico[str_gene]] += (radius  - 1 *  vector_distance[str_gene_index]) / radius
-            list_expression_vec.append(expression_vector)
-        count_matrix = np.array(list_expression_vec)"""
         return count_matrix
 
     def get_dict_proba_edge_in_situ(self,
@@ -386,10 +359,8 @@ class ComSegDataset():
             sampling_size=10000,
             remove_self_node=False):
 
-        #print("adapt to when I prune")
-
         """
-        compute the gene co-expression correlation at the dataset scale
+        compute the gene co-expression correlation at the dataset scale and save it in self.dict_co_expression
 
         :param config: dictionary of parameters to overwrite the default parameters, default is None
         :type config: dict
@@ -422,7 +393,6 @@ class ComSegDataset():
         if radius is None:
             radius = self.mean_cell_diameter / 2
 
-        dico_proba_edge = {}
 
         list_of_count_matrix = []
         assert self.__len__() > 0, "no images in the dataset"
@@ -449,15 +419,12 @@ class ComSegDataset():
             count_matrix = np.concatenate(list_of_count_matrix, axis=0)
         if sampling:
             if len(count_matrix) > sampling_size:
-                #print("count_matrix.shape", count_matrix.shape)
-                #print(f"sampling {sampling} vectors")
                 count_matrix = count_matrix[np.random.choice(count_matrix.shape[0], sampling_size, replace=False), :]
-                #print("count_matrix.shape", count_matrix.shape)
 
         dict_co_expression = self.get_dict_proba_edge_in_situ(count_matrix=count_matrix,
                                                               distance=distance,
                                                               )
         self.dict_co_expression = dict_co_expression
-        return dico_proba_edge, count_matrix
+        return count_matrix
 
     ### fct adding co-expression matrix

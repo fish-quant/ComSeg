@@ -13,6 +13,7 @@ from tqdm import tqdm
 import networkx as nx
 import scipy.sparse as sp
 
+import shapely
 from sklearn.neighbors import NearestNeighbors
 from scipy.sparse import csr_matrix
 import anndata as ad
@@ -27,12 +28,7 @@ from .utils import custom_louvain  ## for dev mode
 
 __all__ = ["ComSegGraph"]
 
-import shapely
 
-
-#def normal_dist(x, mean, sd):
-#    prob_density = (np.pi * sd) * np.exp(-0.5 * ((x - mean) / sd) ** 2)
-#    return prob_density
 
 
 class ComSegGraph():
@@ -82,6 +78,8 @@ class ComSegGraph():
         self.k_nearest_neighbors = k_nearest_neighbors
         if edge_max_length is None:
             self.edge_max_length = mean_cell_diameter / 4
+        else:
+            self.edge_max_length = edge_max_length
         self.resolution = 1
         self.selected_genes = selected_genes
         self.gene_index_dict = {}
@@ -154,12 +152,11 @@ class ComSegGraph():
             weight = self.dict_co_expression[gene_source][gene_target]
             G[edges[0]][edges[1]]["weight"] = weight
             G[edges[0]][edges[1]]["distance"] = distance_list[edges_index]
-            #G[edges[0]][edges[1]]["gaussian"] = normal_dist(distance_list[edges_index], mean=0, sd=1)
 
         self.G = G
-        self.list_features_order = np.array(list_features_order)  ## for later used ?
-        self.list_coordo_order = list_coordo_order  # for later used ?
-        self.list_coordo_order_no_scaling = list_coordo_order_no_scaling  ## for later used ?
+        self.list_features_order = np.array(list_features_order)
+        self.list_coordo_order = list_coordo_order
+        self.list_coordo_order_no_scaling = list_coordo_order_no_scaling
         return G
 
     ## get community detection vector
@@ -177,9 +174,6 @@ class ComSegGraph():
         :type clustering_method: str
         :param seed: (optional) seed for the graph partitioning initialization
         :type seed: int
-        :param prior_name: (optional) Name of the prior cell assignment column the input CSV file. Node with the same prior label will be merged into a super node.
-        node with different prior label can not be merged during the modularity optimization.
-        :type prior_name: str
         :return: a graph with a new node attribute "community" with the community detection vector
         :rtype: nx.Graph
         """
@@ -571,9 +565,6 @@ class ComSegGraph():
         ----------
         """
 
-        #print(f'max distance is {max_distance}')
-
-        nn_find = 0
         find = 0
         dico_expression_m = {}  ## store {nuc: nodes}
         nb_centroid = 0
@@ -589,11 +580,9 @@ class ComSegGraph():
                                 G.nodes[node_index][
                                     "key_pred"] == celltype]  # or celltype in G.nodes[node_index][key_pred]] à quoi sert cette ligne
             subgraph = G.subgraph(list_nodes_index).copy().to_undirected()
-            # print(top)
             centroid_list = [n for n, y in subgraph.nodes(data=True) if y["super_node_prior_key"] != 0]
             nb_centroid += len(centroid_list)
             for cc in list(nx.connected_components(subgraph)):
-                # print(f'nb node in cc {len(cc)}')
                 if len(set(centroid_list).intersection(cc)) == 1:
                     nucleus_node = list(set(centroid_list).intersection(cc))[0]
                     length, path = nx.single_source_dijkstra(G.subgraph(cc).to_undirected(),
@@ -604,11 +593,9 @@ class ComSegGraph():
                     dico_expression_m[nucleus_node] = [[node, length[node]] for node in length.keys()]
                     find += len(list(length.keys()))
                 if len(set(centroid_list).intersection(cc)) > 1:
-                    # break
                     list_nuclei = list(set(centroid_list).intersection(cc))
                     dico_length = {}  # {centroid : length list}
                     dico_shortest_path = {}
-                    # print(f'list_nuclei len  {len(list_nuclei)}')
 
                     for nucleus_node in list_nuclei:
                         dico_expression_m[nucleus_node] = []
@@ -636,7 +623,7 @@ class ComSegGraph():
                         except ValueError as e:
                             print(e)
                             raise ValueError(f"node {node} not find in dikjtra")
-        ## add new_label to the grpa
+        ## add new_label to the graph
         for node_all in G.nodes():
             G.nodes[node_all]["cell_index_pred"] = 0
             G.nodes[node_all]["distance2centroid"] = np.inf
@@ -830,7 +817,7 @@ class ComSegGraph():
                 })
             elif isinstance(geometry, shapely.geometry.MultiPolygon):
                 for poly in list(geometry.geoms):
-                    if not allow_disconnected_polygon:
+                    if allow_disconnected_polygon:
                         json_dict["geometries"].append({
                             "type": "Polygon",
                             "coordinates": [list(poly.exterior.coords)],
@@ -838,18 +825,7 @@ class ComSegGraph():
                         })
                     else:
                         raise ValueError(
-                            "disconnected polygons are not allowed, change allow_disconnected_polygon=False")
+                            "disconnected polygons are not allowed, change allow_disconnected_polygon=True or increase the alpha parameter")
             else:
-
-                """centroid = self.dict_cell_centroid[cell]
-                centroid = np.array(centroid)
-                if centroid.ndim == 2:
-                    centroid = np.mean(centroid, axis=0)
-                list_cell_centroid += [tuple(centroid)]
-                json_dict["geometries"].append({
-                    "type": "Point",
-                    "coordinates": [[(centroid[self.dico_xyz_index["x"]], centroid[self.dico_xyz_index["y"]])]],
-                    "cell":  int(cell)
-                })"""
                 continue
         return anndata, json_dict
