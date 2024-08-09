@@ -378,10 +378,10 @@ class ComSegDict():
                     df_centroid = pd.read_csv(Path(path_cell_centroid) / (img_name + file_extension))
                     x_list = list(df_centroid[centroid_csv_key["x"]])
                     y_list = list(df_centroid["y"])
-                    if "z" in df_centroid.columns:
+                    if centroid_csv_key["z"] in df_centroid.columns:
                         z_list = list(df_centroid["z"])
                     cell_list = list(df_centroid[self.dataset.prior_name])
-                    if "z" in df_centroid.columns:
+                    if centroid_csv_key["z"] in df_centroid.columns:
                         dict_cell_centroid = {cell_list[i]: np.array([z_list[i], y_list[i], x_list[i]])
                                               for i in range(len(cell_list))}
                     else:

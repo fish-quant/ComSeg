@@ -9,7 +9,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ComSeg"
-version = "1.4"
+version = "1.5dev"
 authors = [
   { name="Thomas Defard", email="thomas.defard@mines-paristech.fr" },
 ]
@@ -21,5 +21,7 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-
+dynamic = ["dependencies"]
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
 

@@ -23,6 +23,16 @@ then in ``R`` do
    install.packages("feather")
    install.packages("arrow")
 
+Alternatively, you can install arrow from conda-forge:
+.. code-block:: bash
+
+   conda install -c conda-forge --strict-channel-priority r-arrow
+
+
+
+
+
+
 
 Download the package from PyPi
 ------------------------------
@@ -42,8 +52,13 @@ alternatively you can clone the github repository `Github repository <https://gi
 .. code-block:: bash
 
    $ git clone +https://github.com/tdefa/ComSeg_pkg
-   $ cd sim-fish
-   $ pip install -e .
+   $ cd ComSeg_pkg
+   $ pip install -e . -r requirements.txt
+
+for this local install if import comseg as follows:
+.. code-block:: bash
+
+   import src.comseg as comseg
 
 ------------
 
