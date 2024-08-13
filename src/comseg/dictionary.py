@@ -163,7 +163,7 @@ class ComSegDict():
                 df_spots_label['z'] = 0
             comseg_m = ComSegGraph(
                 selected_genes=self.dataset.selected_genes,
-                df_spots_label=self.dataset[img_name],
+                df_spots_label=df_spots_label,
                 dict_scale=self.dataset.dict_scale,
                 mean_cell_diameter=self.mean_cell_diameter,  # in micrometer
                 dict_co_expression=self.dataset.dict_co_expression,
