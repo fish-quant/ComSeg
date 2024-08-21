@@ -1,7 +1,7 @@
 
 <img src="./comseg.png" width="650" height="263">
 
-# News 
+# News 10/08/24
 - Update with comseg 1.8.1: Compatibility with SOPA : (https://gustaveroussy.github.io/sopa/tutorials/comseg/)
 
 # Support
