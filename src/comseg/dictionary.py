@@ -33,6 +33,7 @@ class ComSegDict():
                  mean_cell_diameter=None,
                  community_detection="with_prior",
                  seed=None,
+                 disable_tqdm=False,
                  ):
 
         """
@@ -55,6 +56,8 @@ class ComSegDict():
         self.community_detection = community_detection
         self.seed = seed
         self.dict_img_name = {}
+        self.disable_tqdm = disable_tqdm
+        self.dataset.disable_tqdm = disable_tqdm
 
         ###
         ##
@@ -156,7 +159,7 @@ class ComSegDict():
         :type k_nearest_neighbors: int
         :return:
         """
-        for img_name in tqdm(list(self.dataset)):
+        for img_name in tqdm(list(self.dataset), disable=self.disable_tqdm):
             #### GRAPH CREATION
             df_spots_label = self.dataset[img_name]
             if not self.dataset._do_3D or "z" not in df_spots_label.columns:
@@ -170,6 +173,7 @@ class ComSegDict():
                 k_nearest_neighbors=k_nearest_neighbors,
                 gene_column=self.dataset.gene_column,
                 prior_name=self.dataset.prior_name,
+                disable_tqdm=self.disable_tqdm,
             )
             comseg_m.create_graph()
             self[img_name] = comseg_m
@@ -368,7 +372,7 @@ class ComSegDict():
         :return:
         """
 
-        for img_name in tqdm(self):
+        for img_name in tqdm(self, disable=self.disable_tqdm):
 
             if path_cell_centroid is not None:
                 assert self.dataset.dict_centroid is None, "The dict_centroid attribute of the dataset is not None. Please remove it or set it to None."
@@ -427,7 +431,7 @@ class ComSegDict():
 
         """
 
-        for img_name in tqdm(self):
+        for img_name in tqdm(self, disable=self.disable_tqdm):
             print(img_name)
             self[img_name].associate_rna2landmark(
                 key_pred=key_pred,
@@ -471,7 +475,7 @@ class ComSegDict():
             alpha = config.get("alpha", alpha)
             allow_disconnected_polygon = config.get("allow_disconnected_polygon", allow_disconnected_polygon)
 
-        for img_name in tqdm(self):
+        for img_name in tqdm(self, disable=self.disable_tqdm):
             anndata, json_dict = self[img_name].get_anndata_from_result(
                 key_cell_pred='cell_index_pred',
                 min_rna_per_cell=min_rna_per_cell,
@@ -511,6 +515,7 @@ class ComSegDict():
                 ### classify centroid
                 path_dataset_folder_centroid: str = None,
                 file_extension: str = ".csv",
+                disable_tqdm=False
                 ):
         """
         function running all the ComSeg steps: (compute_community_vector(),
@@ -561,6 +566,7 @@ class ComSegDict():
             min_merge_correlation = config.get("min_merge_correlation", min_merge_correlation)
             path_dataset_folder_centroid = config.get("path_dataset_folder_centroid", path_dataset_folder_centroid)
             file_extension = config.get("file_extension", file_extension)
+            disable_tqdm = config.get("disable_tqdm", disable_tqdm)
 
         if norm_vector:
             assert is_r_package_installed("sctransform"), "The R package sctransform is not installed. Please install it to use the normalization or set norm_vector=False"

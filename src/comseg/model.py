@@ -55,7 +55,8 @@ class ComSegGraph():
                  edge_max_length=None,
                  gene_column="gene",
                  prior_name="in_nucleus",
-                 ):
+                 disable_tqdm=False,
+    ):
 
         """
         :param df_spots_label: dataframe of the spots with column x,y,z, gene and optionally the prior label column
@@ -91,6 +92,7 @@ class ComSegGraph():
         self.mean_cell_diameter = mean_cell_diameter
         self.gene_column = gene_column
         self.prior_name = prior_name
+        self.disable_tqdm = disable_tqdm
 
     ## create directed graph
 
@@ -201,7 +203,8 @@ class ComSegGraph():
             comm = nx_comm.louvain_communities(G.to_undirected(reciprocal=False),
                                                weight="weight",
                                                resolution=self.resolution,
-                                               seed=seed)
+                                               seed=seed,
+                                               disable_tqdm=self.disable_tqdm)
 
         if clustering_method == "with_prior":
             comm, final_graph = custom_louvain.louvain_communities(
@@ -212,7 +215,9 @@ class ComSegGraph():
                 seed=seed,
                 partition=partition,
                 prior_key=self.prior_name,
-                confidence_level=confidence_level)
+                confidence_level=confidence_level,
+                disable_tqdm=self.disable_tqdm)
+
 
         list_expression_vectors = []
         list_coordinates = []
@@ -285,7 +290,7 @@ class ComSegGraph():
         for index_commu in dict_cluster_id:
             dico_commu_cluster[list_index_commu[index_commu]] = dict_cluster_id[index_commu]
         G = self.G
-        for node in tqdm(G.nodes()):
+        for node in tqdm(G.nodes(), disable=self.disable_tqdm):
             if G.nodes[node][self.gene_column] == 'centroid':
                 continue
             G.nodes[node][clustering_method] = str(dico_commu_cluster[G.nodes[node]['index_commu']])
@@ -425,8 +430,11 @@ class ComSegGraph():
             list_coordo_order_nuc_centroid_no_scaling = []
             list_coordo_order_nuc_centroid = []
             for nuc in self.dict_cell_centroid:
-                assert len(self.dict_cell_centroid[nuc]) == len(self.list_coordo_order[0])
-                centroid_pix = np.array(self.dict_cell_centroid[nuc])
+                assert len(self.dict_cell_centroid[nuc]) == len(self.list_coordo_order[0]) or len(self.dict_cell_centroid[nuc][0]) == len(self.list_coordo_order[0])
+                if  len(self.dict_cell_centroid[nuc]) == len(self.list_coordo_order[0]):
+                    centroid_pix = np.array(self.dict_cell_centroid[nuc])
+                else:
+                    centroid_pix = np.array(self.dict_cell_centroid[nuc][0])
                 centroid_um = centroid_pix * np.array([self.dict_scale['z'],
                                                        self.dict_scale['y'],
                                                        self.dict_scale["x"]])
@@ -536,7 +544,7 @@ class ComSegGraph():
             distance=distance,
             max_cell_radius=max_cell_radius,
         )
-        for super_node_index in tqdm(list(G_merge.nodes())):
+        for super_node_index in tqdm(list(G_merge.nodes()), disable=self.disable_tqdm):
             set_super_nodes = G_merge.nodes[super_node_index]['nodes']
             for simple_nodes in set_super_nodes:
                 self.G.nodes[simple_nodes]["cell_index_pred"] = G_merge.nodes[super_node_index]["cell_index_pred"]
@@ -782,7 +790,7 @@ class ComSegGraph():
             dict_polygon[anndata.obs["CellID"][cell_index]] = alpha_shape
 
         ### ensure that there is no overlap between the polygons of list_polygon
-        for i in tqdm(list(range(len(list_polygon)))):
+        for i in tqdm(list(range(len(list_polygon))), disable=self.disable_tqdm):
             for j in range(i + 1, len(list_polygon)):
                 if list_polygon[i].intersects(list_polygon[j]):
                     list_polygon[i] = list_polygon[i].difference(list_polygon[j])

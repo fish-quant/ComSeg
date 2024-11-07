@@ -36,7 +36,8 @@ def louvain_communities(
     seed=random.Random(),
     partition = None,
     prior_key="in_nucleus",
-    confidence_level = 0.99
+    confidence_level = 0.99,
+    disable_tqdm = False,
     ):
 
 
@@ -49,6 +50,7 @@ def louvain_communities(
         partition = partition,
         prior_key = prior_key,
         confidence_level = confidence_level,
+        disable_tqdm = disable_tqdm
                            )
     q = deque(d, maxlen=1)
     return q.pop()
@@ -64,7 +66,9 @@ def louvain_partitions(
     seed=random.Random(),
     partition =None,
     prior_key = "in_nucleus",
-    confidence_level = 0.99
+    confidence_level = 0.99,
+    disable_tqdm = False
+
     ):
 
 
@@ -104,10 +108,12 @@ def louvain_partitions(
         yield [s.copy() for s in partition], graph
 
         if new_mod - mod <= threshold:
-            print(f'stop because of improvement of modularity {new_mod - mod}  below  the threshold  {threshold}')
+            if not disable_tqdm:
+                print(f'stop because of improvement of modularity {new_mod - mod}  below  the threshold  {threshold}')
             improvement = False
         else:
-            print(f'improvement of modularity {new_mod - mod}')
+            if not disable_tqdm:
+                print(f'improvement of modularity {new_mod - mod}')
             mod = new_mod
             partition, inner_partition, improvement = _one_level(
                 graph=graph,

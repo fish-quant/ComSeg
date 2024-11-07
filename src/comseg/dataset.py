@@ -38,6 +38,9 @@ class ComSegDataset():
                  centroid_csv_files: list = None,
                  path_cell_centroid=None,
                  min_nb_rna_patch=None,
+                 disable_tqdm=False,
+                 config=None,
+
 
                  ):
 
@@ -61,6 +64,20 @@ class ComSegDataset():
         :type centroid_name: list
         :min_nb_rna_patch: minimum number of rna in a patch to consider it in the dataset
         """
+        if config is not None:
+            path_dataset_folder = config.get("path_dataset_folder", path_dataset_folder)
+            prior_name = config.get("prior_name", prior_name)
+            path_to_mask_prior = config.get("path_to_mask_prior", path_to_mask_prior)
+            mask_file_extension = config.get("mask_file_extension", mask_file_extension)
+            dict_scale = config.get("dict_scale", dict_scale)
+            mean_cell_diameter = config.get("mean_cell_diameter", mean_cell_diameter)
+            gene_column = config.get("gene_column", gene_column)
+            image_csv_files = config.get("image_csv_files", image_csv_files)
+            centroid_csv_files = config.get("centroid_csv_files", centroid_csv_files)
+            path_cell_centroid = config.get("path_cell_centroid", path_cell_centroid)
+            min_nb_rna_patch = config.get("min_nb_rna_patch", min_nb_rna_patch)
+            disable_tqdm = config.get("disable_tqdm", disable_tqdm)
+        self.disable_tqdm = disable_tqdm
         self.path_dataset_folder = Path(path_dataset_folder)
         if path_to_mask_prior is not None:
             self.path_to_mask_prior = Path(path_to_mask_prior)
@@ -92,7 +109,7 @@ class ComSegDataset():
                     if len(pd.read_csv(image_path_df)) < min_nb_rna_patch:
                         print(f"skip {image_path_df.stem} because it has less than {min_nb_rna_patch} rna")
                         continue
-                print(f"add {image_path_df.stem}")
+                #print(f"add {image_path_df.stem}")
                 self.path_image_dict[image_path_df.stem] = image_path_df
                 unique_gene += list(pd.read_csv(self.path_image_dict[image_path_df.stem])[self.gene_column].unique())
         if len(self.path_image_dict) == 0:
@@ -196,7 +213,7 @@ class ComSegDataset():
         if compute_centroid:
             self.dict_centroid = {}
         for image_path_df in self.path_dataset_folder.glob(regex_df):
-            print(f"add prior to {image_path_df.stem}")
+            #print(f"add prior to {image_path_df.stem}")
             df_spots = pd.read_csv(image_path_df)
 
             assert (self.path_to_mask_prior / (
@@ -331,7 +348,7 @@ class ComSegDataset():
         for gene_source in range(len(self.selected_genes)):  # I compute the same thing twice ...
             dico_proba_edge[self.selected_genes[gene_source]] = {}
 
-        for gene_source in tqdm(range(len(self.selected_genes))):  # I compute the same thing twice ...
+        for gene_source in tqdm(range(len(self.selected_genes)), disable=self.disable_tqdm):  # I compute the same thing twice ...
             #print(gene_source)
             for gene_target in range(gene_source, len(self.selected_genes)):
                 exp_gene_source = count_matrix[:, gene_source]
@@ -405,11 +422,9 @@ class ComSegDataset():
         else:
             list_img = list(self.path_image_dict.keys())
 
-        for image_name in tqdm(list_img):
+        for image_name in tqdm(list_img, disable=self.disable_tqdm, desc=f"Processing images"):
             df_spots_label = pd.read_csv(self.path_image_dict[image_name])
-            #print(df_spots_label)
 
-            print("image name : ", image_name)
             count_matrix = self.count_matrix_in_situ_from_knn(df_spots_label=df_spots_label,  # df_spots_label,
                                                               n_neighbors=n_neighbors,
                                                               radius=radius,

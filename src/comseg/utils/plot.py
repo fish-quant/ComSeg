@@ -19,8 +19,11 @@ def plot_result(nuclei,
                 spots_size = 1,
                 plot_outlier = True):
 
-
-    mip_nuclei = np.amax(nuclei, 0)
+    if nuclei.ndim == 3:
+        mip_nuclei = np.amax(nuclei, 0)
+    else:
+        assert nuclei.ndim == 2, "nuclei should be 2D or 3D"
+        mip_nuclei = nuclei
     dico_spots_pos = {}  ## gene : [coord]
     unique_comm = np.unique([y[key_node] for x, y in G.nodes(data=True) if key_node in y])[:]
     for label in unique_comm:
