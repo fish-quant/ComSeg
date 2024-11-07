@@ -549,6 +549,7 @@ class ComSegDict():
         :type path_dataset_folder_centroid: str
         :param file_extension: file extension of the centroid dictionary (.npy) or csv file (.csv)
         :type file_extension: str
+        :param disable_tqdm: if True disable the tqdm progress bar
         :return:
         """
         if config is not None:

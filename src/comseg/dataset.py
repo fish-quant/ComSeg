@@ -63,6 +63,7 @@ class ComSegDataset():
         :param centroid_name: list of the centroid csv file name , as to be in the same order as the image_names_csv_file
         :type centroid_name: list
         :min_nb_rna_patch: minimum number of rna in a patch to consider it in the dataset
+        :disable_tqdm: if True disable the tqdm progress bar
         """
         if config is not None:
             path_dataset_folder = config.get("path_dataset_folder", path_dataset_folder)
