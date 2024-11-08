@@ -30,8 +30,9 @@ Alternatively, you can install arrow from conda-forge:
 
    conda install -c conda-forge --strict-channel-priority r-arrow
 
-ComSeg use sctransform to normalize the data, if you want to use the normalization step,
-you need to install the package in R. The normalization with sctransform make the segmentation better.
+ComSeg optionally uses sctransform to normalize the expression of "RNA communities", if you want to use
+this normalization step,
+you need to install the R packages. The normalization with sctransform makes the segmentation better.
 
 
 
