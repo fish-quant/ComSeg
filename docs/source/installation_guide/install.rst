@@ -7,7 +7,8 @@ Getting started
 To avoid dependency conflicts, we recommend the the use of a dedicated
 `virtual <https://docs.python.org/3.6/library/venv.html>`_ or `conda
 <https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-
-environments.html>`_ environment.  In a terminal run the command:
+environments.html>`_ environment.
+In a terminal run the command:
 
 .. code-block:: bash
 
@@ -15,7 +16,7 @@ environments.html>`_ environment.  In a terminal run the command:
    $ conda activate ComSeg_env
    $ conda install R=4.3
 
-then in ``R`` do
+(Optional) If you want to use a normalization step normalization :  then in ``R`` do
 
 .. code-block:: bash
 
@@ -29,7 +30,8 @@ Alternatively, you can install arrow from conda-forge:
 
    conda install -c conda-forge --strict-channel-priority r-arrow
 
-
+ComSeg use sctransform to normalize the data, if you want to use the normalization step,
+you need to install the package in R. The normalization with sctransform make the segmentation better.
 
 
 

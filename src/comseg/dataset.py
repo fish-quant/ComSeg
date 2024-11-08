@@ -8,7 +8,6 @@ import pandas as pd
 from scipy.stats import hypergeom
 from sklearn.neighbors import NearestNeighbors
 from pathlib import Path
-#from processing_seg import full_df
 from tqdm import tqdm
 ### dataset class
 from .utils.preprocessing import compute_dict_centroid
@@ -78,6 +77,7 @@ class ComSegDataset():
             path_cell_centroid = config.get("path_cell_centroid", path_cell_centroid)
             min_nb_rna_patch = config.get("min_nb_rna_patch", min_nb_rna_patch)
             disable_tqdm = config.get("disable_tqdm", disable_tqdm)
+
         self.disable_tqdm = disable_tqdm
         self.path_dataset_folder = Path(path_dataset_folder)
         if path_to_mask_prior is not None:
