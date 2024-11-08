@@ -28,7 +28,8 @@ Alternatively, you can install arrow from conda-forge:
 
 .. code-block:: bash
 
-   conda install -c conda-forge --strict-channel-priority r-arrow
+   conda install -c conda-forge r-arrow
+   # or conda install -c conda-forge --strict-channel-priority r-arrow
 
 ComSeg optionally uses sctransform to normalize the expression of "RNA communities", if you want to use
 this normalization step,
