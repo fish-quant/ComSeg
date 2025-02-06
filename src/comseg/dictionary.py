@@ -201,6 +201,7 @@ class ComSegDict():
                                   nb_min_cluster=0,
                                   min_merge_correlation=0.8,
                                   merge_cluster=True,
+                                  sample_size_for_scTranform=10000,
                                   ):
 
         """
@@ -249,7 +250,7 @@ class ComSegDict():
                                                    selected_genes=self.global_anndata.var_names)
         ### APPLY NORMALIZATION
         if norm_vector:
-            self.in_situ_clustering.compute_normalization_parameters()
+            self.in_situ_clustering.compute_normalization_parameters(sample_size=sample_size_for_scTranform)
         else:
             self.in_situ_clustering.param_sctransform = None
             self.in_situ_clustering.genes_to_take = [True] * len(self.in_situ_clustering.selected_genes)

@@ -44,13 +44,16 @@ class InSituClustering():
         #self.anndata.var.index = self.anndata.var.index.astype(str)
 
     def compute_normalization_parameters(self,
-                                         debug_path=None):
+                                         debug_path=None,
+                                         sample_size=10000):
+
         """
 
         Compute the ScTransform normalization parameters from the class attribute anndata
 
         :param debug_path:
         :return:
+
         """
         bool_index, new_selected_genes = select_genes_for_sct(
             vec=self.anndata.X,
@@ -62,11 +65,22 @@ class InSituClustering():
         self.norm_bool_index = bool_index
         row_indice = np.nonzero(np.sum(self.anndata.X[:, bool_index], axis=1) > 0)[0]
         row_indice = np.isin(list(range(len(self.anndata))), row_indice)
+
+
+
         count_matrix = self.anndata.X[:, bool_index].toarray()
         count_matrix = count_matrix[row_indice, :]
 
+        ### add sampling here
+        if count_matrix.shape[0] > sample_size:
+            count_matrix = count_matrix[np.random.choice(count_matrix.shape[0], 10000, replace=False), :]
+
+
+
+
+
         #print(f'shape count matrix {count_matrix.shape}')
-        np.save("count_matrix", count_matrix)
+        #np.save("count_matrix", count_matrix)
         count_matrix = pd.DataFrame(count_matrix, columns=[str(e) for e in range(count_matrix.shape[1])])
         #print(count_matrix.columns)
         norm_expression_vectors, param_sctransform = run_sctransform(count_matrix,
