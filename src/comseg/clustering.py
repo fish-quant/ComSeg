@@ -66,18 +66,12 @@ class InSituClustering():
         row_indice = np.nonzero(np.sum(self.anndata.X[:, bool_index], axis=1) > 0)[0]
         row_indice = np.isin(list(range(len(self.anndata))), row_indice)
 
-
-
         count_matrix = self.anndata.X[:, bool_index].toarray()
         count_matrix = count_matrix[row_indice, :]
 
         ### add sampling here
         if count_matrix.shape[0] > sample_size:
             count_matrix = count_matrix[np.random.choice(count_matrix.shape[0], 10000, replace=False), :]
-
-
-
-
 
         #print(f'shape count matrix {count_matrix.shape}')
         #np.save("count_matrix", count_matrix)
