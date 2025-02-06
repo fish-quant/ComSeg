@@ -201,7 +201,7 @@ class ComSegDict():
                                   nb_min_cluster=0,
                                   min_merge_correlation=0.8,
                                   merge_cluster=True,
-                                  sample_size_for_scTranform=10000,
+                                  sample_size_for_scTranform=5000,
                                   ):
 
         """
